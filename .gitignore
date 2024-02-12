@@ -1,0 +1,20 @@
+
+# Do not track any bash scripts:
+*.sh
+
+# Avoid binaries
+MAIN
+
+# Do not track the following directories:
+external/*
+Outputs/*
+Parameters/*
+.vscode/*
+
+# Ignore all txt files
+*.txt
+
+# Ignore all sorts of images
+*.pdf
+*.png
+*.jpg
