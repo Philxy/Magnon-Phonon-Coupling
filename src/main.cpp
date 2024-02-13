@@ -8,39 +8,52 @@
 int main()
 {
 
-
-
-    ///*
+    /*
     // Eigen "Hello, World" program to determine eigenvalues and eigenvectors of a given matrix
-    using Eigen::Matrix3d;
-    using Eigen::Vector3d;
 
     // Define a 3x3 matrix
     Eigen::Matrix3d matrix;
-
-    matrix(0,0) = 1;
-    matrix(0,1) = 2;
-    matrix(0,2) = 3;
-    matrix(1,0) = 4;
-    matrix(1,1) = 5;
-    matrix(1,2) = 6;
-    matrix(2,0) = 7;
-    matrix(2,1) = 8;
-    matrix(2,2) = 9;
+    matrix(0, 0) = 1;
+    matrix(0, 1) = 0;
+    matrix(0, 2) = 0;
+    matrix(1, 0) = 0;
+    matrix(1, 1) = 1;
+    matrix(1, 2) = 0;
+    matrix(2, 0) = 0;
+    matrix(2, 1) = 0;
+    matrix(2, 2) = 1;
 
     // Compute the eigenvalues and eigenvectors
-    Eigen::EigenSolver<Eigen::Matrix3d> solver(matrix);
+    Eigen::EigenSolver<Eigen::Matrix3d> solution = getEigenValVec(matrix);
 
     // Print the eigenvalues
     std::cout << "The eigenvalues of the matrix are:\n"
-              << solver.eigenvalues() << std::endl;
+              << solution.eigenvalues() << std::endl;
     // Print the eigenvectors
     std::cout << "The eigenvectors of the matrix are:\n"
-              << solver.eigenvectors() << std::endl;
+              << solution.eigenvectors().col(0).x() << std::endl;
 
     return 0;
-    //*/
+    */
 
+    // Calculates phonon-phonon dispersion relation
+    std::vector<CouplingParameter> parameters_ph = readCouplingParametersPh("Parameters/force_constants_bccFe.txt");
+
+    std::ofstream outFilePh("Outputs/numbersPh.txt");
+    outFilePh << "kx,ky,kz,omega1,omega2,omega3\n";
+
+    for (Vector3D k : constructPath(100, 1))
+    {
+        Eigen::Matrix3d dynMat_k = dynMat(k.x, k.y, k.z, parameters_ph);
+
+        Eigen::EigenSolver<Eigen::Matrix3d> solver(dynMat_k);
+        Eigen::Vector3cd eigenvalues = solver.eigenvalues();
+        Eigen::Matrix3cd eigenvectors = solver.eigenvectors();
+
+        outFilePh << k.x << "," << k.y << "," << k.z << "," << eigenvalues.x().real() << "," << eigenvalues.y().real() << "," << eigenvalues.z().real() << "\n";
+    }
+    outFilePh.close();
+    return 0;
 
     // Calculates the magnon-magnon dispersion relation and writes it to a file based on the isotropic Heisenberg exchange between neighbors given in a fiel
     std::vector<CouplingParameter> parameters_J_iso = readCouplingParametersIso("Parameters/J_bccFe.txt");
@@ -55,7 +68,6 @@ int main()
     }
     outFileIso.close();
 
-
     /// Calculates the magnon-magnon interaction DOS by sampling the BZ
     std::ofstream outFileBZSampling("Outputs/numbersBZSampling.txt");
     outFileBZSampling << "kx,ky,kz,J\n";
@@ -67,7 +79,6 @@ int main()
         outFileBZSampling << k.x << "," << k.y << "," << k.z << "," << Jk << "\n";
     }
     outFileBZSampling.close();
-
 
     std::vector<CouplingParameter> parameters;  // contains all the parameters
     std::vector<CouplingParameter> parametersX; // contains all the parameters with x displacement

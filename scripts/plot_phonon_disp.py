@@ -38,13 +38,13 @@ def parse_complex(tuple_str):
     return complex(float(tuple_str[0]), float(tuple_str[1]))
 
 
-file_path = 'Outputs/numbersIso.txt'
+file_path = 'Outputs/numbersPh.txt'
 
 lattice_constant = 1
 
 # Initialize a list to hold the parsed data
 datak = []
-dataJ = []
+dataOmega = []
 # Open the file and read the data
 with open(file_path, 'r') as file:
     file.readline()
@@ -56,10 +56,10 @@ with open(file_path, 'r') as file:
 
         # Use regular expression to find all tuples
         matches = re.findall(r'\([-\d.e]+,[-\d.e]+\)', line)
-        J = [parse_complex(z) for z in matches]
+        omegas = [float(w) for w in parts[3:]]
 
         datak.append(kVector)
-        dataJ.append(J[0])
+        dataOmega.append(omegas)
 
 
 
@@ -74,18 +74,11 @@ x = np.arange(0, len(datak))
 
 split = 5 * k_points_per_path
 
-# the J are given in mRy, convert them to THz by dividing by hbar
-
-ein_mRy_in_eV = 1E-3 * 13.605693
-ein_mRy_in_meV = 13.605693
-
-ein_mRy_durch_hbar_in_Hz = 2.067068666810E13 
-ein_mRy_durch_hbar_in_THz = 20.67068666810
 
 
-#axs.plot(x[:split],[J.real for J in dataJ][:split],linewidth=2.5) # plot in mRy
-#axs.plot(x[:split],[J.real*ein_mRy_durch_hbar_in_THz for J in dataJ][:split],linewidth=2.5) #plot in THz
-axs.plot(x[:split],[J.real*ein_mRy_in_meV for J in dataJ][:split],linewidth=2.5) #plot in meV
+
+
+axs.plot(x[:split],[w[0] for w in dataOmega][:split],linewidth=2.5) #plot in meV
 
 labels = [r'$\Gamma$', '$H$', '$N$', r'$\Gamma$', '$P$', '$H$']
 
@@ -98,11 +91,9 @@ axs.set_xlim(0,(len(labels)-1)*k_points_per_path)
 
 axs.set_xticks([i * k_points_per_path for i in range(len(labels))], labels )
 
+axs.set_ylabel(r'$\mathrm{magnon}$ $\mathrm{dispersion}$ $\mathrm{(???)}$')
 
-
-axs.set_ylabel(r'$\mathrm{magnon}$ $\mathrm{dispersion}$ $\mathrm{(meV)}$')
-
-plt.savefig('scripts/Figures/mag_disp_bccFe.pdf')
+plt.savefig('scripts/Figures/ph_disp_bccFe.pdf')
 plt.show()
 plt.clf()
 
@@ -110,9 +101,6 @@ plt.clf()
 exit()
 
 plt.style.use("seaborn-v0_8-bright")
-
-
-
 
 
 paths_xx = split_into_n_parts(xx,6)
