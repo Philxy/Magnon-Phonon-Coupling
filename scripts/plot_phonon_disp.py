@@ -78,7 +78,9 @@ split = 5 * k_points_per_path
 
 
 
-axs.plot(x[:split],[w[0] for w in dataOmega][:split],linewidth=2.5) #plot in meV
+axs.plot(x[:split],[np.sqrt(w[0]) for w in dataOmega][:split],linewidth=2.5) #plot in meV
+axs.plot(x[:split],[np.sqrt(w[1]) for w in dataOmega][:split],linewidth=2.5) #plot in meV
+axs.plot(x[:split],[np.sqrt(w[2])for w in dataOmega][:split],linewidth=2.5) #plot in meV
 
 labels = [r'$\Gamma$', '$H$', '$N$', r'$\Gamma$', '$P$', '$H$']
 
@@ -101,6 +103,7 @@ plt.clf()
 exit()
 
 plt.style.use("seaborn-v0_8-bright")
+
 
 
 paths_xx = split_into_n_parts(xx,6)

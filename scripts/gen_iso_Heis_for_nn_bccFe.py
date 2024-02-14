@@ -55,6 +55,8 @@ sorted_dict = {k: dict[k] for k in sorted(dict)}
 J_n = [1.2, 0.646, -0.030, -0.100, -0.068, 0.042, -0.001, 0.014]
 
 
+exit()
+
 file = open('Parameters/J_bccFe.txt', 'w')
 file.write('x,y,z,J\n')
 
