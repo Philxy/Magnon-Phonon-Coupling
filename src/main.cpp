@@ -37,12 +37,28 @@ int main()
     */
 
     // Calculates phonon-phonon dispersion relation
-    std::vector<CouplingParameter> parameters_ph = readCouplingParametersPh("Parameters/force_constants_bccFe.txt");
+
+    std::vector<CouplingParameter> dyn_matrices = readDynMatrices("Parameters/dynMat.txt");
+    std::vector<CouplingParameter> next_neighbors = readNextNeighbors("Parameters/nn8.txt");
+
+    std::ofstream outFileFC("Outputs/FC.txt");
+    outFileFC << "x,y,z,Phi_xx,Phi_xy,Phi_xz,Phi_yx,Phi_yy,Phi_yz,Phi_zx,Phi_zy,Phi_zz\n";
+
+    for (CouplingParameter nn : next_neighbors)
+    {
+        Eigen::Matrix3d force_mat = forceMatrix(nn.x, nn.y, nn.z, dyn_matrices);
+        outFileFC << nn.x << "," << nn.y << "," << nn.z << "," << force_mat(0, 0) << "," << force_mat(0, 1) << "," << force_mat(0, 2) << "," << force_mat(1, 0) << "," << force_mat(1, 1) << "," << force_mat(1, 2) << "," << force_mat(2, 0) << "," << force_mat(2, 1) << "," << force_mat(2, 2) << "\n";
+    }
+
+    outFileFC.close();
+
+
+    std::vector<CouplingParameter> parameters_ph = readCouplingParametersPh("Outputs/FC.txt");
 
     std::ofstream outFilePh("Outputs/numbersPh.txt");
     outFilePh << "kx,ky,kz,omega1,omega2,omega3\n";
 
-    for (Vector3D k : constructPath(100, 1))
+    for (Vector3D k : constructPath(10, 1))
     {
         Eigen::Matrix3d dynMat_k = dynMat(k.x, k.y, k.z, parameters_ph);
 
