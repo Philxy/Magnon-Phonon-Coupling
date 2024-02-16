@@ -105,7 +105,7 @@ Eigen::Matrix3d dynMat(double kx, double ky, double kz, std::vector<CouplingPara
         {
             for (int beta = 0; beta <= 2; beta++)
             {
-                result(alpha, beta) += p.Phi[alpha][beta] * std::exp(-i * (kx * p.x + ky * p.y + kz * p.z));
+                result(alpha, beta) += p.Phi[alpha][beta] * std::exp(+i * (kx * p.x + ky * p.y + kz * p.z));
             }
         }
     }
