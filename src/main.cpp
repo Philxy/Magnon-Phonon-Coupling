@@ -5,9 +5,16 @@
 #include "../include/path.h"
 #include "../include/eigen.h"
 #include <omp.h> // Include the OpenMP header
+#include "../include/util.h"
 
 int main()
 {
+
+    std::vector<Vector3D> path = constructPath(100, 1);
+
+    const double atomic_mass = 55.845; // atomic mass given in Dalton
+    const double S = 1;
+
     // Calculates phonon-phonon dispersion relation
     std::vector<CouplingParameter> dyn_matrices = readDynMatrices("Parameters/dynMat_16x16x16.txt"); // retrieve the dynamical matrices
     std::vector<CouplingParameter> next_neighbors = readNextNeighbors("Parameters/nn4.txt");         // get the nearest neighbors in real space
@@ -22,48 +29,49 @@ int main()
     }
 
     outFileFC.close();
-
-    std::vector<CouplingParameter> parameters_ph = readCouplingParametersPh("Outputs/FC.txt");
+    std::vector<CouplingParameter> parameters_ph = readCouplingParametersPh("Outputs/FC.txt"); // retreive the force matrices from the file
 
     std::ofstream outFilePh("Outputs/numbersPh.txt");
-    outFilePh << "kx,ky,kz,omega1,omega2,omega3\n";
+    outFilePh << "kx,ky,kz,omega1,omega2,omega3,e1x,e1y,e1z,e2x,e2y,e2z,e3x,e3y,e3z\n";
 
-    for (const Vector3D &k : constructPath(100, 1))
+    for (const Vector3D &k : path)
     {
+        // Solve the eigenvalue problem
         Eigen::Matrix3d dynMat_k = dynMat(k.x, k.y, k.z, parameters_ph);
-        Eigen::EigenSolver<Eigen::Matrix3d> solver(dynMat_k);
+        Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> solver(dynMat_k);
         Eigen::Vector3cd eigenvalues = solver.eigenvalues();
         Eigen::Matrix3cd eigenvectors = solver.eigenvectors();
 
-        outFilePh << k.x << "," << k.y << "," << k.z << "," << eigenvalues.x().real() << "," << eigenvalues.y().real() << "," << eigenvalues.z().real() << "\n";
+        //std::cout << eigenvectors.col(0).x() << "," << eigenvectors.col(0).y() << "," << eigenvectors.col(0).z()<< std::endl;
+
+        // Calculate the eigenenergies from the eigenvalues in meV
+        // assuming the eigenvalues have units of mRy/(a.u.)^2
+
+        //makeEigenvaluesPositive(eigenvalues, eigenvectors);
+
+        double E1 = sqrt(eigenvalues.x() / atomic_mass).real() * 14.25133727;
+        double E2 = sqrt(eigenvalues.y() / atomic_mass).real() * 14.25133727;
+        double E3 = sqrt(eigenvalues.z() / atomic_mass).real() * 14.25133727;
+
+        // sortEigen(eigenvalues, eigenvectors);
+
+        outFilePh << k.x << "," << k.y << "," << k.z << "," << E1 << "," << E2 << "," << E3 << "," << eigenvectors.col(0).x().real() << "," << eigenvectors.col(0).y().real() << "," << eigenvectors.col(0).z().real() << "," << eigenvectors.col(1).x().real() << "," << eigenvectors.col(1).y().real() << "," << eigenvectors.col(1).z().real() << "," << eigenvectors.col(2).x().real() << "," << eigenvectors.col(2).y().real() << "," << eigenvectors.col(2).z().real() << "\n";
     }
     outFilePh.close();
-    return 0;
+
 
     // Calculates the magnon-magnon dispersion relation and writes it to a file based on the isotropic Heisenberg exchange between neighbors given in a file
     std::vector<CouplingParameter> parameters_J_iso = readCouplingParametersIso("Parameters/J_bccFe.txt");
 
-    std::ofstream outFileIso("Outputs/numbersIso.txt");
+    std::ofstream outFileIso("Outputs/numbersJIso.txt");
     outFileIso << "kx,ky,kz,J\n";
 
-    for (const Vector3D &k : constructPath(200, 1))
+    for (const Vector3D &k : path)
     {
         std::complex<double> Jk = FTJiso(k.x, k.y, k.z, parameters_J_iso);
-        outFileIso << k.x << "," << k.y << "," << k.z << "," << Jk << "\n";
+        outFileIso << k.x << "," << k.y << "," << k.z << "," << Jk.real() << "\n";
     }
     outFileIso.close();
-
-    /// Calculates the magnon-magnon interaction DOS by sampling the BZ
-    std::ofstream outFileBZSampling("Outputs/numbersBZSampling.txt");
-    outFileBZSampling << "kx,ky,kz,J\n";
-
-    std::vector<Vector3D> grid = sampleBZ(100);
-    for (Vector3D k : grid)
-    {
-        std::complex<double> Jk = FTJiso(k.x, k.y, k.z, parameters_J_iso);
-        outFileBZSampling << k.x << "," << k.y << "," << k.z << "," << Jk << "\n";
-    }
-    outFileBZSampling.close();
 
     std::vector<CouplingParameter> parameters;  // contains all the parameters
     std::vector<CouplingParameter> parametersX; // contains all the parameters with x displacement
@@ -79,7 +87,7 @@ int main()
     parametersY.insert(parametersY.end(), ij_uk_y_parameter.begin(), ij_uk_y_parameter.end());
     parametersZ.insert(parametersZ.end(), ij_uk_z_parameter.begin(), ij_uk_z_parameter.end());
 
-    std::ofstream outFile("Outputs/numbers.txt");
+    std::ofstream outFile("Outputs/numbersD.txt");
 
     if (!outFile.is_open())
     {
@@ -89,7 +97,7 @@ int main()
 
     outFile << "kx,ky,kz,D_k_x_x,D_k_x_y,D_k_x_z,D_k_y_x,D_k_y_y,D_k_y_z\n";
 
-    for (const Vector3D &k : constructPath(100, 1))
+    for (const Vector3D &k : path)
     {
         std::complex<double> D_k_x_x = FTD(k.x, k.y, k.z, parametersX, X, X);
         std::complex<double> D_k_x_y = FTD(k.x, k.y, k.z, parametersY, X, Y);
@@ -106,8 +114,21 @@ int main()
         outFile << k.x << "," << k.y << "," << k.z << "," << D_k_x_x << "," << D_k_x_y << "," << D_k_x_z << "," << D_k_y_x << "," << D_k_y_y << "," << D_k_y_z << "\n";
     }
 
-    // Close the file
     outFile.close();
+
+    /*
+    // Calculates the magnon-magnon interaction DOS by sampling the BZ
+    std::ofstream outFileBZSampling("Outputs/numbersBZSampling.txt");
+    outFileBZSampling << "kx,ky,kz,J\n";
+
+    std::vector<Vector3D> grid = sampleBZ(100);
+    for (Vector3D k : grid)
+    {
+        std::complex<double> Jk = FTJiso(k.x, k.y, k.z, parameters_J_iso);
+        outFileBZSampling << k.x << "," << k.y << "," << k.z << "," << Jk << "\n";
+    }
+    outFileBZSampling.close();
+    */
 
     return 0;
 }

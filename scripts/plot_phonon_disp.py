@@ -72,12 +72,9 @@ x = np.arange(0, len(datak))
 split = 5 * k_points_per_path
 
 
-axs.scatter(x[:split], [np.sqrt(w[0])
-            for w in dataOmega][:split], s=1)  # plot in meV
-axs.scatter(x[:split], [np.sqrt(w[1])
-            for w in dataOmega][:split], s=1)  # plot in meV
-axs.scatter(x[:split], [np.sqrt(w[2])
-            for w in dataOmega][:split], s=1)  # plot in meV
+axs.plot(x[:split], [w[0] for w in dataOmega][:split])  # plot in meV
+axs.plot(x[:split], [w[1] for w in dataOmega][:split])  # plot in meV
+axs.plot(x[:split], [w[2] for w in dataOmega][:split])  # plot in meV
 
 labels = [r'$\Gamma$', '$H$', '$N$', r'$\Gamma$', '$P$', '$H$']
 
@@ -90,7 +87,7 @@ axs.set_xlim(0, (len(labels)-1)*k_points_per_path)
 
 axs.set_xticks([i * k_points_per_path for i in range(len(labels))], labels)
 
-axs.set_ylabel(r'$\mathrm{magnon}$ $\mathrm{dispersion}$ $\mathrm{(???)}$')
+axs.set_ylabel(r'$\mathrm{phonon}$ $\mathrm{dispersion}$ $\mathrm{(meV)}$')
 
 plt.savefig('scripts/Figures/ph_disp_bccFe.pdf')
 plt.show()

@@ -1,15 +1,16 @@
 #include "../include/fourierTransform.h"
 
-std::complex<double> FTD(double kx, double ky, double kz, std::vector<CouplingParameter> params, Axis nu, Axis mu)
+std::complex<double> FTD(double kx, double ky, double kz, const std::vector<CouplingParameter> &params, Axis nu, Axis mu)
 {
 
     std::complex<double> result(0, 0);
 
     const std::complex<double> i(0.0, 1.0);
 
-    for (CouplingParameter p : params)
+    for (int idx = 0; idx < params.size(); idx++)
     {
 
+        const CouplingParameter &p = params.at(idx);
         if (p.displacementDirection != mu)
         {
             continue;
@@ -38,7 +39,7 @@ std::complex<double> FTD(double kx, double ky, double kz, std::vector<CouplingPa
     return result;
 }
 
-std::complex<double> FTD(double kx1, double ky1, double kz1, double kx2, double ky2, double kz2, std::vector<CouplingParameter> params, Axis nu, Axis mu)
+std::complex<double> FTD(double kx1, double ky1, double kz1, double kx2, double ky2, double kz2, const std::vector<CouplingParameter> &params, Axis nu, Axis mu)
 {
     std::complex<double> result(0, 0);
 
@@ -81,7 +82,7 @@ std::complex<double> FTD(double kx1, double ky1, double kz1, double kx2, double 
     return result;
 }
 
-std::complex<double> FTJiso(double kx, double ky, double kz, std::vector<CouplingParameter> params)
+std::complex<double> FTJiso(double kx, double ky, double kz, const std::vector<CouplingParameter> &params)
 {
     std::complex<double> result;
     const std::complex<double> i(0.0, 1.0);
@@ -94,7 +95,7 @@ std::complex<double> FTJiso(double kx, double ky, double kz, std::vector<Couplin
     return result;
 }
 
-Eigen::Matrix3d dynMat(double kx, double ky, double kz, std::vector<CouplingParameter> params)
+Eigen::Matrix3d dynMat(double kx, double ky, double kz, const std::vector<CouplingParameter> &params)
 {
     Eigen::Matrix3cd result;
     std::complex<double> i(0, 1);
@@ -123,8 +124,7 @@ Eigen::Matrix3d dynMat(double kx, double ky, double kz, std::vector<CouplingPara
     return result_real;
 }
 
-
-Eigen::Matrix3d forceMatrix(double x, double y, double z, std::vector<CouplingParameter> params)
+Eigen::Matrix3d forceMatrix(double x, double y, double z, const std::vector<CouplingParameter> &params)
 {
     Eigen::Matrix3cd result;
     std::complex<double> i(0, 1);

@@ -54,12 +54,15 @@ with open(file_path, 'r') as file:
 
         kVector = [float(part) for part in parts[:3]]
 
+
+        J = float(parts[3])
+        
         # Use regular expression to find all tuples
-        matches = re.findall(r'\([-\d.e]+,[-\d.e]+\)', line)
-        J = [parse_complex(z) for z in matches]
+        #matches = re.findall(r'\([-\d.e]+,[-\d.e]+\)', line)
+        #J = [parse_complex(z) for z in matches]
 
         datak.append(kVector)
-        dataJ.append(J[0])
+        dataJ.append(J)
 
 
 
