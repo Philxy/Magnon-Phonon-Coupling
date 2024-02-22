@@ -67,6 +67,11 @@ def main():
     # DMI-like coupling parameters
     file_DMIlike = 'scripts/Data/numbersD.txt'
 
+
+    file_DMIlike = "Outputs/numbersD.txt"
+    file_phonon = "Outputs/numbersPh.txt"
+    file_magnon = "Outputs/numbersJIso.txt"
+
     data_ph = retrieve_data_from_file(file_phonon)
     data_mag = retrieve_data_from_file(file_magnon)
     data_D = retrieve_data_from_file(file_DMIlike)
@@ -83,6 +88,8 @@ def main():
     pol_vec = np.zeros(shape=(num_kVec, 3, 3), dtype=float)
     # ph-mg coupling parameters
     DMI_like_coupl = np.zeros(shape=(num_kVec, 2, 3), dtype=complex)
+    DMI_like_coupl_neg_k = np.zeros(shape=(num_kVec, 2, 3), dtype=complex) # for the k values with the opposite sign as above
+
 
     assert len(data_D[0]) == len(data_ph[0]) and len(data_mag[0]) == len(
         data_ph[0]),  "The data should have the same number of k Vectors!"
@@ -111,9 +118,17 @@ def main():
         DMI_like_coupl[idx][1][1] = data_D[1][idx][4]
         DMI_like_coupl[idx][1][2] = data_D[1][idx][5]
 
+        DMI_like_coupl_neg_k[idx][0][0] = data_D[1][idx][6]
+        DMI_like_coupl_neg_k[idx][0][1] = data_D[1][idx][7]
+        DMI_like_coupl_neg_k[idx][0][2] = data_D[1][idx][8]
+        DMI_like_coupl_neg_k[idx][1][0] = data_D[1][idx][9]
+        DMI_like_coupl_neg_k[idx][1][1] = data_D[1][idx][10]
+        DMI_like_coupl_neg_k[idx][1][2] = data_D[1][idx][11]
+
+
     imaginary_unit = complex(0, 1)
     
-    S = 4.6
+    S = 4.8
     atomic_mass = 55.845  # in Dalton
     d_aniso = 6.97 * 1E-3  # anisotropy energy in meV
 
@@ -124,45 +139,56 @@ def main():
     x_values = []
     A_coefficients, B_coefficients, C_coefficients, D_coefficients = [], [], [], []
 
-    signs_pol_vec = []
+    conjugate_check = []
+
+    D_minus_mu_coefficients = []
 
     for idx in range(num_kVec):
 
-        # correct the magnon disp rel so that it includes anisotropy and the max number of spin excitations S
+        # correct the magnon dispersion relation so that it includes anisotropy and the max number of spin excitations S
         mag_energy[idx] = S * (mag_energy[idx] + 2*d_aniso)
 
         # skip all points in k space where we have negative or null phonon energies:
         if ph_energy[idx][0] <= 0.0 or ph_energy[idx][1] <= 0.0 or ph_energy[idx][2] <= 0.0:
             continue
 
+        # scale phonon energy
+        #ph_energy[idx][0] *= .45
+        #ph_energy[idx][1] *= .45
+        #ph_energy[idx][2] *= .45
+
         C_coeff_all_branches = [0, 0, 0]
         D_coeff_all_branches = [0, 0, 0]
 
-        signs = []
+        D_minus_mu_coeff = [0,0,0]
+
+        conjugate_difference = []
 
         for branch in range(3):
             C_coeff = 0
             D_coeff = 0
-            s = 0
-            for axis in range(3):
-                C_coeff += 2*imaginary_unit/np.sqrt(2*S) * (pol_vec[idx][axis][branch]) * 3.8636 * np.sqrt(1.0 / (
-                    2 * atomic_mass * ph_energy[idx][branch])) * (DMI_like_coupl[idx][0][axis] - imaginary_unit * DMI_like_coupl[idx][1][axis])
-                D_coeff += -2*imaginary_unit/np.sqrt(2*S) * (pol_vec[idx][axis][branch]) * 3.8636 * np.sqrt(1.0 / (
-                    2 * atomic_mass * ph_energy[idx][branch])) * (DMI_like_coupl[idx][0][axis] + imaginary_unit * DMI_like_coupl[idx][1][axis])
 
-                if axis ==1:
-                    s = np.sign(pol_vec[idx][axis][branch])
+            for axis in range(3):
+
+                D_mk_plus_mu = DMI_like_coupl_neg_k[idx][0][axis] + imaginary_unit * DMI_like_coupl_neg_k[idx][1][axis]
+                D_k_minus_mu = DMI_like_coupl[idx][0][axis] - imaginary_unit * DMI_like_coupl[idx][1][axis]
+
+                C_coeff +=  2*imaginary_unit/np.sqrt(2*S) * (pol_vec[idx][axis][branch]) * 3.8636 * np.sqrt(1.0 / (2 * atomic_mass * ph_energy[idx][branch])) * D_k_minus_mu
+                D_coeff += -2*imaginary_unit/np.sqrt(2*S) * (pol_vec[idx][axis][branch]) * 3.8636 * np.sqrt(1.0 / (2 * atomic_mass * ph_energy[idx][branch])) * D_mk_plus_mu
+
+                D_minus_mu_coeff[axis] = D_k_minus_mu
 
             C_coeff_all_branches[branch] = C_coeff
             D_coeff_all_branches[branch] = D_coeff
-            
-            signs.append(np.sign(s))
 
-        signs_pol_vec.append(signs)
+            conjugate_difference.append( np.conjugate(C_coeff) - D_coeff)
+
+        conjugate_check.append(conjugate_difference  )
+
+        D_minus_mu_coefficients.append(D_minus_mu_coeff)
 
         x_values.append(idx)
-        A_coefficients.append(
-            [ph_energy[idx][0], ph_energy[idx][1], ph_energy[idx][2]])
+        A_coefficients.append([ph_energy[idx][0], ph_energy[idx][1], ph_energy[idx][2]])
         B_coefficients.append(mag_energy[idx])
         C_coefficients.append(C_coeff_all_branches)
         D_coefficients.append(D_coeff_all_branches)
@@ -176,27 +202,30 @@ def main():
         wm = [wM(A_coefficients[idx][branch], B_coefficients[idx], C_coefficients[idx]
                  [branch], D_coefficients[idx][branch]).real for idx in range(len(x_values))]
 
-        axs[0].scatter(x_values, [(D_coefficients[idx][branch].imag) for idx in range(len(x_values))], s=.5, label='imag')
-        axs[0].scatter(x_values, [(D_coefficients[idx][branch].real) for idx in range(len(x_values))], s=.5, label='real')
-
+        axs[0].scatter(x_values, [np.abs(C_coefficients[idx][branch].imag) for idx in range(len(x_values))], s=.5, label='imag')
+        axs[0].scatter(x_values, [np.abs(C_coefficients[idx][branch].real) for idx in range(len(x_values))], s=.5, label='real')
         
-        # Plot the signs of the first component of the eigenvectors
-        #axs[1].scatter(x_values, [signs_pol_vec[idx][branch] for idx in range(len(x_values))], s=.5, label='imag')
+        # multiply the C and D coefficients: as they are complex conjugates, the product should be positive and real
+        #axs[1].scatter(x_values, [(D_coefficients[idx][branch]*C_coefficients[idx][branch]).imag for idx in range(len(x_values))], s=.5, label='imag')
+        #axs[1].scatter(x_values, [(D_coefficients[idx][branch]*C_coefficients[idx][branch]).real for idx in range(len(x_values))], s=.5, label='real')
+
+        # Check weather the coefficients are complex conjugates
+        #axs[1].scatter(x_values, [x[branch].real for x in conjugate_check], label='real')
+        #axs[1].scatter(x_values, [x[branch].imag for x in conjugate_check],label='imag')
 
 
+        axs[2].scatter(x_values, wm, s=.5, label='wM', c='b' )
+        axs[2].scatter(x_values, wp, s=.5, label='wM', c='b' )
 
-
-        axs[1].scatter(x_values, [(D_coefficients[idx][branch]*C_coefficients[idx][branch]).imag for idx in range(len(x_values))], s=.5, label='imag')
-        axs[1].scatter(x_values, [(D_coefficients[idx][branch]*C_coefficients[idx][branch]).real for idx in range(len(x_values))], s=.5, label='real')
-
-        #axs[1].scatter(x_values, [(C_coefficients[idx][branch].imag) for idx in range(len(x_values))], s=.5, label='imag')
-        #axs[1].scatter(x_values, [(C_coefficients[idx][branch].real) for idx in range(len(x_values))], s=.5, label='real')
-
-        axs[2].scatter(x_values, wm, s=1, label='wM', c='red')
-        axs[2].scatter(x_values, wp, s=1, label='wM', c='blue')
+    for axis in range(3):
+        axs[1].plot(x_values, [D_minus_mu_coefficients[idx][axis].real for idx in range(len(x_values))], label=str(axis+1), linestyle='--')
+        axs[1].plot(x_values, [D_minus_mu_coefficients[idx][axis].imag for idx in range(len(x_values))], label=str(axis+1))
 
     axs[0].legend()
     axs[1].legend()
+
+    axs[0].set_ylabel(r"$C_\mathbf{k}$")
+    axs[1].set_ylabel(r"$\mathcal{D}^{-,\mu}_\mathbf{k}$")
 
     plt.show()
 

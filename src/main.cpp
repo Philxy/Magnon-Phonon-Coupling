@@ -10,7 +10,7 @@
 int main()
 {
 
-    std::vector<Vector3D> path = constructPath(100, 1);
+    std::vector<Vector3D> path = constructPath(1000, 1);
 
     const double atomic_mass = 55.845; // atomic mass given in Dalton
     const double S = 1;
@@ -48,6 +48,8 @@ int main()
         // assuming the eigenvalues have units of mRy/(a.u.)^2
 
         //makeEigenvaluesPositive(eigenvalues, eigenvectors);
+        changeEigenVecSign(eigenvectors);
+
 
         double E1 = sqrt(eigenvalues.x() / atomic_mass).real() * 14.25133727;
         double E2 = sqrt(eigenvalues.y() / atomic_mass).real() * 14.25133727;
@@ -107,11 +109,20 @@ int main()
         std::complex<double> D_k_y_y = FTD(k.x, k.y, k.z, parametersY, Y, Y);
         std::complex<double> D_k_y_z = FTD(k.x, k.y, k.z, parametersZ, Y, Z);
 
-        // std::complex<double> D_k_z_x = FT(k.x, k.y, k.z, parameters, Z, X);
-        // std::complex<double> D_k_z_y = FT(k.x, k.y, k.z, parameters, Z, Y);
-        // std::complex<double> D_k_z_z = FT(k.x, k.y, k.z, parameters, Z, Z);
+        // calculate the FT of the DMI-like coupling parameters with k vectors having opposite sign
+        std::complex<double> D_mk_x_x = FTD(-k.x, -k.y, -k.z, parametersX, X, X);
+        std::complex<double> D_mk_x_y = FTD(-k.x, -k.y, -k.z, parametersY, X, Y);
+        std::complex<double> D_mk_x_z = FTD(-k.x, -k.y, -k.z, parametersZ, X, Z);
 
-        outFile << k.x << "," << k.y << "," << k.z << "," << D_k_x_x << "," << D_k_x_y << "," << D_k_x_z << "," << D_k_y_x << "," << D_k_y_y << "," << D_k_y_z << "\n";
+        std::complex<double> D_mk_y_x = FTD(-k.x, -k.y, -k.z, parametersX, Y, X);
+        std::complex<double> D_mk_y_y = FTD(-k.x, -k.y, -k.z, parametersY, Y, Y);
+        std::complex<double> D_mk_y_z = FTD(-k.x, -k.y, -k.z, parametersZ, Y, Z);
+
+        std::complex<double> i(0,1);
+
+        //std:: cout << std::conj((D_k_x_x - i * D_k_y_x)) - (D_k_x_x + i * D_k_y_x) << std::endl;
+
+        outFile << k.x << "," << k.y << "," << k.z << "," << D_k_x_x << "," << D_k_x_y << "," << D_k_x_z << "," << D_k_y_x << "," << D_k_y_y << "," << D_k_y_z << "," << D_mk_x_x << "," << D_mk_x_y << "," << D_mk_x_z << "," << D_mk_y_x << "," << D_mk_y_y << "," << D_mk_y_z << "\n";
     }
 
     outFile.close();

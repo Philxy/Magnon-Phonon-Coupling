@@ -42,7 +42,6 @@ void sortEigen(Eigen::Vector3cd &eigenvalues, Eigen::Matrix3cd &eigenvectors)
     eigenvectors = sorted_eigenvectors;
 }
 
-
 // Switches sign of eigenvalues if it is negative and adjust the corresponding eigenvectors too.
 void makeEigenvaluesPositive(Eigen::Vector3cd &eigenvalues, Eigen::Matrix3cd &eigenvectors)
 {
@@ -51,6 +50,20 @@ void makeEigenvaluesPositive(Eigen::Vector3cd &eigenvalues, Eigen::Matrix3cd &ei
         if (eigenvalues(idx).real() < 0)
         {
             eigenvalues(idx) *= -1;
+            eigenvectors.col(idx).x() *= -1;
+            eigenvectors.col(idx).y() *= -1;
+            eigenvectors.col(idx).z() *= -1;
+        }
+    }
+    return;
+}
+
+void changeEigenVecSign(Eigen::Matrix3cd &eigenvectors)
+{
+    for (int idx = 0; idx < 3; idx++)
+    {
+        if (eigenvectors.col(idx).x().real() < 0)
+        {
             eigenvectors.col(idx).x() *= -1;
             eigenvectors.col(idx).y() *= -1;
             eigenvectors.col(idx).z() *= -1;

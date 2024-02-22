@@ -38,7 +38,7 @@ def parse_complex(tuple_str):
     return complex(float(tuple_str[0]), float(tuple_str[1]))
 
 
-file_path = 'Outputs/numbers.txt'
+file_path = 'Outputs/numbersD.txt'
 
 lattice_constant = 1
 
@@ -56,7 +56,7 @@ with open(file_path, 'r') as file:
 
         # Use regular expression to find all tuples
         matches = re.findall(r'\([-\d.e]+,[-\d.e]+\)', line)
-        Dxx, Dxy, Dxz, Dyx, Dyy, Dyz = [parse_complex(z) for z in matches]
+        Dxx, Dxy, Dxz, Dyx, Dyy, Dyz = [parse_complex(z) for z in matches][:6]
 
         Ds = [Dxx, Dxy, Dxz, Dyx, Dyy, Dyz]
         datak.append(kVector)
@@ -231,5 +231,5 @@ axs[1][0].set_ylabel(r'$\mathrm{Im}\mathcal{D}^{y\mu}_\mathbf{k}$')
 
 axs[0][5].legend(title=r'$\mu$')
 
-plt.savefig('scripts/Figures/ImD_bccFe.pdf')
+#plt.savefig('scripts/Figures/ImD_bccFe.pdf')
 plt.show()
