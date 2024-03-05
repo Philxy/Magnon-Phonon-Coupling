@@ -6,15 +6,8 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-#include "couplingParameters.h"
+#include "util.h"
 
-// Kartesian coordinate axes
-enum Axis
-{
-    X,
-    Y,
-    Z
-};
 
 struct CouplingParameter
 {
@@ -32,9 +25,9 @@ struct CouplingParameter
     std::string printParameter();
 };
 
+
 std::vector<CouplingParameter> readCouplingParameters(const std::string &filename, Axis displacementDirection);
 std::vector<CouplingParameter> readCouplingParametersIso(const std::string &filename);
 std::vector<CouplingParameter> readCouplingParametersPh(const std::string &filename);
 std::vector<CouplingParameter> readDynMatrices(const std::string &filename);
 std::vector<CouplingParameter> readNextNeighbors(const std::string &filename);
-

@@ -11,6 +11,7 @@ std::complex<double> FTD(double kx, double ky, double kz, const std::vector<Coup
     {
 
         const CouplingParameter &p = params.at(idx);
+
         if (p.displacementDirection != mu)
         {
             continue;
@@ -39,6 +40,25 @@ std::complex<double> FTD(double kx, double ky, double kz, const std::vector<Coup
     return result;
 }
 
+
+DMILikeCouplingParam::DMILikeCouplingParam(double kx, double ky, double kz, const std::vector<CouplingParameter> &parameters)
+{
+    this->kx = kx;
+    this->ky = ky;
+    this->kz = kz;
+
+    std::vector<Axis> allAxis = {X,Y,Z};
+
+
+    for (Axis axis : allAxis)
+    {
+        this->D[axis][X] = FTD(kx, ky, kz, parameters, axis, X);
+        this->D[axis][Y] = FTD(kx, ky, kz, parameters, axis, Y);
+    }
+}
+
+
+/*
 std::complex<double> FTD(double kx1, double ky1, double kz1, double kx2, double ky2, double kz2, const std::vector<CouplingParameter> &params, Axis nu, Axis mu)
 {
     std::complex<double> result(0, 0);
@@ -81,6 +101,7 @@ std::complex<double> FTD(double kx1, double ky1, double kz1, double kx2, double 
 
     return result;
 }
+*/
 
 std::complex<double> FTJiso(double kx, double ky, double kz, const std::vector<CouplingParameter> &params)
 {

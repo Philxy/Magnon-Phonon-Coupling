@@ -4,76 +4,22 @@
 #include "../include/fourierTransform.h"
 #include "../include/path.h"
 #include "../include/eigen.h"
-#include <omp.h> // Include the OpenMP header
 #include "../include/util.h"
+#include "../include/dispersion.h"
+#include "../include/diagonalization.h"
 
 int main()
 {
+    std::vector<Vector3D> path = constructPath(100, 1);
 
-    std::vector<Vector3D> path = constructPath(1000, 1);
+    const double ATOMIC_MASS = 55.845; // atomic mass given in Dalton
+    const double S = 1.1;
 
-    const double atomic_mass = 55.845; // atomic mass given in Dalton
-    const double S = 1;
+    // Calculates phonon dispersion relation
+    std::vector<PhononDispParam> phononDispersion = getPhononDispersion("Parameters/dynMat_16x16x16.txt", "Parameters/nn4.txt", "Outputs/numbersPhTest.txt", path, ATOMIC_MASS);
 
-    // Calculates phonon-phonon dispersion relation
-    std::vector<CouplingParameter> dyn_matrices = readDynMatrices("Parameters/dynMat_16x16x16.txt"); // retrieve the dynamical matrices
-    std::vector<CouplingParameter> next_neighbors = readNextNeighbors("Parameters/nn4.txt");         // get the nearest neighbors in real space
-
-    std::ofstream outFileFC("Outputs/FC.txt"); // file to write the force cosntants to
-    outFileFC << "x,y,z,Phi_xx,Phi_xy,Phi_xz,Phi_yx,Phi_yy,Phi_yz,Phi_zx,Phi_zy,Phi_zz\n";
-
-    for (const CouplingParameter &nn : next_neighbors)
-    {
-        Eigen::Matrix3d force_mat = forceMatrix(nn.x, nn.y, nn.z, dyn_matrices);
-        outFileFC << nn.x << "," << nn.y << "," << nn.z << "," << force_mat(0, 0) << "," << force_mat(0, 1) << "," << force_mat(0, 2) << "," << force_mat(1, 0) << "," << force_mat(1, 1) << "," << force_mat(1, 2) << "," << force_mat(2, 0) << "," << force_mat(2, 1) << "," << force_mat(2, 2) << "\n";
-    }
-
-    outFileFC.close();
-    std::vector<CouplingParameter> parameters_ph = readCouplingParametersPh("Outputs/FC.txt"); // retreive the force matrices from the file
-
-    std::ofstream outFilePh("Outputs/numbersPh.txt");
-    outFilePh << "kx,ky,kz,omega1,omega2,omega3,e1x,e1y,e1z,e2x,e2y,e2z,e3x,e3y,e3z\n";
-
-    for (const Vector3D &k : path)
-    {
-        // Solve the eigenvalue problem
-        Eigen::Matrix3d dynMat_k = dynMat(k.x, k.y, k.z, parameters_ph);
-        Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> solver(dynMat_k);
-        Eigen::Vector3cd eigenvalues = solver.eigenvalues();
-        Eigen::Matrix3cd eigenvectors = solver.eigenvectors();
-
-        //std::cout << eigenvectors.col(0).x() << "," << eigenvectors.col(0).y() << "," << eigenvectors.col(0).z()<< std::endl;
-
-        // Calculate the eigenenergies from the eigenvalues in meV
-        // assuming the eigenvalues have units of mRy/(a.u.)^2
-
-        //makeEigenvaluesPositive(eigenvalues, eigenvectors);
-        changeEigenVecSign(eigenvectors);
-
-
-        double E1 = sqrt(eigenvalues.x() / atomic_mass).real() * 14.25133727;
-        double E2 = sqrt(eigenvalues.y() / atomic_mass).real() * 14.25133727;
-        double E3 = sqrt(eigenvalues.z() / atomic_mass).real() * 14.25133727;
-
-        // sortEigen(eigenvalues, eigenvectors);
-
-        outFilePh << k.x << "," << k.y << "," << k.z << "," << E1 << "," << E2 << "," << E3 << "," << eigenvectors.col(0).x().real() << "," << eigenvectors.col(0).y().real() << "," << eigenvectors.col(0).z().real() << "," << eigenvectors.col(1).x().real() << "," << eigenvectors.col(1).y().real() << "," << eigenvectors.col(1).z().real() << "," << eigenvectors.col(2).x().real() << "," << eigenvectors.col(2).y().real() << "," << eigenvectors.col(2).z().real() << "\n";
-    }
-    outFilePh.close();
-
-
-    // Calculates the magnon-magnon dispersion relation and writes it to a file based on the isotropic Heisenberg exchange between neighbors given in a file
-    std::vector<CouplingParameter> parameters_J_iso = readCouplingParametersIso("Parameters/J_bccFe.txt");
-
-    std::ofstream outFileIso("Outputs/numbersJIso.txt");
-    outFileIso << "kx,ky,kz,J\n";
-
-    for (const Vector3D &k : path)
-    {
-        std::complex<double> Jk = FTJiso(k.x, k.y, k.z, parameters_J_iso);
-        outFileIso << k.x << "," << k.y << "," << k.z << "," << Jk.real() << "\n";
-    }
-    outFileIso.close();
+    // Calculate magnon dispersion relation
+    std::vector<MagnonDispParam> magnonDispersion = getMagneticDispersion("Parameters/J_bccFe.txt", "Outputs/numbersJIso_test.txt", path, S);
 
     std::vector<CouplingParameter> parameters;  // contains all the parameters
     std::vector<CouplingParameter> parametersX; // contains all the parameters with x displacement
@@ -89,7 +35,63 @@ int main()
     parametersY.insert(parametersY.end(), ij_uk_y_parameter.begin(), ij_uk_y_parameter.end());
     parametersZ.insert(parametersZ.end(), ij_uk_z_parameter.begin(), ij_uk_z_parameter.end());
 
-    std::ofstream outFile("Outputs/numbersD.txt");
+    // parameters.insert(parameters.end(), ij_uk_x_parameter.begin(), ij_uk_x_parameter.end());
+    // parameters.insert(parameters.end(), ij_uk_y_parameter.begin(), ij_uk_y_parameter.end());
+    // parameters.insert(parameters.end(), ij_uk_z_parameter.begin(), ij_uk_z_parameter.end());
+
+    parameters.insert(parameters.begin(), ij_uk_x_parameter.begin(), ij_uk_x_parameter.end());
+    parameters.insert(parameters.begin(), ij_uk_y_parameter.begin(), ij_uk_y_parameter.end());
+    parameters.insert(parameters.begin(), ij_uk_z_parameter.begin(), ij_uk_z_parameter.end());
+
+    std::ofstream outFileEV("Outputs/8x8Eigenenergies.txt");
+
+    for (int idx = 0; idx < path.size(); idx++)
+    {
+        Diagonalization diag(parameters, phononDispersion.at(idx), magnonDispersion.at(idx), path.at(idx), ATOMIC_MASS, S);
+        diag.calcCD();
+        diag.calcMatrixHamiltonian();
+        diag.diagonalize();
+
+        outFileEV << diag.k.x << "," << diag.k.y << "," << diag.k.z << ",";
+        for (int i = 0; i < 7; i++)
+        {
+            outFileEV << diag.eigenEnergies.at(i) << ",";
+        }
+        outFileEV << diag.eigenEnergies.at(7) << "\n";
+    }
+    outFileEV.close();
+
+    return 0;
+
+    /*
+    std::vector<std::vector<double>> allEigenenergies = diagonalizeHamiltonian(path, phononDispersion, magnonDispersion, parameters);
+
+    std::ofstream outFileEV("Outputs/8x8Eigenenergies.txt");
+
+    int counter = 0;
+    for (auto eigenenergies : allEigenenergies)
+    {
+
+        outFileEV << path.at(counter).x << "," << path.at(counter).y << "," << path.at(counter).z << ",";
+
+        if (eigenenergies.size() == 0)
+        {
+            continue;
+        }
+        for (int i = 0; i < 7; i++)
+        {
+            outFileEV << eigenenergies.at(i) << ",";
+        }
+        outFileEV << eigenenergies.at(7) << "\n";
+        counter++;
+    }
+
+    outFileEV.close();
+
+    return 0;
+    */
+   
+    std::ofstream outFile("Outputs/numbersDTest.txt");
 
     if (!outFile.is_open())
     {
@@ -99,7 +101,7 @@ int main()
 
     outFile << "kx,ky,kz,D_k_x_x,D_k_x_y,D_k_x_z,D_k_y_x,D_k_y_y,D_k_y_z\n";
 
-    for (const Vector3D &k : path)
+    for (Vector3D k : path)
     {
         std::complex<double> D_k_x_x = FTD(k.x, k.y, k.z, parametersX, X, X);
         std::complex<double> D_k_x_y = FTD(k.x, k.y, k.z, parametersY, X, Y);
@@ -118,9 +120,9 @@ int main()
         std::complex<double> D_mk_y_y = FTD(-k.x, -k.y, -k.z, parametersY, Y, Y);
         std::complex<double> D_mk_y_z = FTD(-k.x, -k.y, -k.z, parametersZ, Y, Z);
 
-        std::complex<double> i(0,1);
+        std::complex<double> i(0, 1);
 
-        //std:: cout << std::conj((D_k_x_x - i * D_k_y_x)) - (D_k_x_x + i * D_k_y_x) << std::endl;
+        // std:: cout << std::conj((D_k_x_x - i * D_k_y_x)) - (D_k_x_x + i * D_k_y_x) << std::endl;
 
         outFile << k.x << "," << k.y << "," << k.z << "," << D_k_x_x << "," << D_k_x_y << "," << D_k_x_z << "," << D_k_y_x << "," << D_k_y_y << "," << D_k_y_z << "," << D_mk_x_x << "," << D_mk_x_y << "," << D_mk_x_z << "," << D_mk_y_x << "," << D_mk_y_y << "," << D_mk_y_z << "\n";
     }

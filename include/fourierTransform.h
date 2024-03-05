@@ -1,16 +1,24 @@
 #pragma once
 #include <complex>
 #include <vector>
-#include "couplingParameters.h"
 #include <cassert>
 #include <Eigen/Dense>
 #include <omp.h>
+#include "util.h"
+#include "couplingParameters.h"
 
-// D_{ijk}^{\nu,\mu}
+
+// Represents the DMI-like anisotropic phonon-magnon coupling parameter in the format D_k^{\nu\mu} where \nu = x,y and \mu=x,y,z
+struct DMILikeCouplingParam
+{
+    double kx, ky, kz;
+    std::complex<double> D[3][2];
+
+    DMILikeCouplingParam(double kx, double ky, double kz, const std::vector<CouplingParameter> &parameters);
+};
+
 
 std::complex<double> FTD(double kx, double ky, double kz, const std::vector<CouplingParameter> &params, Axis nu, Axis mu);
-
-std::complex<double> FTD(double kx1, double ky1, double kz1, double kx2, double ky2, double kz2, const std::vector<CouplingParameter> &params, Axis nu, Axis mu);
 
 std::complex<double> FTJiso(double kx, double ky, double kz, const std::vector<CouplingParameter> &params);
 

@@ -43,6 +43,8 @@ std::vector<Vector3D> constructPath(int number_of_k_vectors, double lattice_cons
     std::vector<Vector3D> path = generatePointsOnLine(Vector3D(0, 0, 0), Vector3D(0, 0, 2 * PI / a), number_of_k_vectors);
     kVectors.insert(kVectors.end(), path.begin(), path.end());
 
+    return kVectors;
+
     // H - N --> (0,0,2PI/a) - (0,PI/a,PI/a)
     path = generatePointsOnLine(Vector3D(0, 0, 2 * PI / a), Vector3D(0, PI / a, PI / a), number_of_k_vectors);
     kVectors.insert(kVectors.end(), path.begin(), path.end());

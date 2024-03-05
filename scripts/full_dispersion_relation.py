@@ -4,6 +4,11 @@ import re
 from util import Power, Sqrt
 
 
+# Enable LaTeX text rendering globally
+plt.rcParams['text.usetex'] = True
+plt.rcParams['text.latex.preamble'] = r'\usepackage{amsmath} \usepackage{amsfonts}'
+
+
 def wP(AA, BB, CC, DD):
     return Sqrt(Power(AA, 2) + Power(BB, 2) + Sqrt(Power(Power(AA, 2) - Power(BB, 2), 2) + 16*AA*BB*CC*DD))/Sqrt(2)
 
@@ -11,6 +16,49 @@ def wP(AA, BB, CC, DD):
 def wM(AA, BB, CC, DD):
     return Sqrt(Power(AA, 2) + Power(BB, 2) - Sqrt(Power(Power(AA, 2) - Power(BB, 2), 2) + 16*AA*BB*CC*DD))/Sqrt(2)
 
+
+
+def List(*x):
+    return [*x]
+
+
+def Smat(AA,BB,CC,DD):
+
+    kk = Sqrt(Power(Power(AA,2) - Power(BB,2),2) + 16*AA*BB*CC*DD)
+    wPlus = wP(AA,BB,CC,DD)
+    wMinus = wM(AA,BB,CC,DD)
+
+    return List(List((kk + (AA + BB)*(-AA - BB + 2*wMinus))/(4.*AA*CC),(-kk + (AA + BB)*(-AA - BB + 2*wPlus))/(4.*AA*CC),(kk - (AA + BB)*(AA + BB + 2*wMinus))/(4.*AA*CC),
+    -0.25*(kk + (AA + BB)*(AA + BB + 2*wPlus))/(AA*CC)),List((-8*AA*CC*DD + Power(AA,2)*(2*BB - 2*wMinus) + (-Power(BB,2) + kk)*(2*BB - 2*wMinus))/(8.*AA*Power(CC,2)),
+    (-8*AA*CC*DD + Power(AA,2)*(2*BB - 2*wPlus) + (Power(BB,2) + kk)*(-2*BB + 2*wPlus))/(8.*AA*Power(CC,2)),
+    (-8*AA*CC*DD + Power(AA,2)*(2*BB + 2*wMinus) + (-Power(BB,2) + kk)*(2*BB + 2*wMinus))/(8.*AA*Power(CC,2)),
+    (-8*AA*CC*DD + Power(AA,2)*(2*BB + 2*wPlus) - (Power(BB,2) + kk)*(2*BB + 2*wPlus))/(8.*AA*Power(CC,2))),
+   List((-kk + (AA - BB)*(AA - BB + 2*wMinus))/(4.*AA*CC),(kk + (AA - BB)*(AA - BB + 2*wPlus))/(4.*AA*CC),(-kk + (AA - BB)*(AA - BB - 2*wMinus))/(4.*AA*CC),
+    (kk + (AA - BB)*(AA - BB - 2*wPlus))/(4.*AA*CC)),List(1,1,1,1))
+
+
+def Sinvmat(AA,BB,CC,DD):
+    kk = Sqrt(Power(Power(AA,2) - Power(BB,2),2) + 16*AA*BB*CC*DD)
+    wPlus = wP(AA,BB,CC,DD)
+    wMinus = wM(AA,BB,CC,DD)
+
+    return List(List(-0.25*(CC*(Power(AA,2) + Power(BB,2) - kk + 2*BB*wMinus - 2*AA*(BB + wMinus)))/(kk*wMinus),-((AA*Power(CC,2))/(kk*wMinus)),
+    (CC*(kk - (AA + BB)*(AA + BB + 2*wMinus)))/(4.*kk*wMinus),(-4*AA*CC*DD + Power(AA,2)*(BB + wMinus) - (Power(BB,2) - kk)*(BB + wMinus))/(4.*kk*wMinus)),
+   List((CC*(Power(AA,2) + Power(BB,2) + kk + 2*BB*wPlus - 2*AA*(BB + wPlus)))/(4.*kk*wPlus),(AA*Power(CC,2))/(kk*wPlus),
+    (CC*(kk + (AA + BB)*(AA + BB + 2*wPlus)))/(4.*kk*wPlus),(4*AA*CC*DD - Power(AA,2)*(BB + wPlus) + (Power(BB,2) + kk)*(BB + wPlus))/(4.*kk*wPlus)),
+   List((CC*(-kk + (AA - BB)*(AA - BB + 2*wMinus)))/(4.*kk*wMinus),(AA*Power(CC,2))/(kk*wMinus),(CC*(-kk + (AA + BB)*(AA + BB - 2*wMinus)))/(4.*kk*wMinus),
+    (4*AA*CC*DD + (Power(BB,2) - kk)*(BB - wMinus) + Power(AA,2)*(-BB + wMinus))/(4.*kk*wMinus)),
+   List(-0.25*(CC*(kk + (AA - BB)*(AA - BB + 2*wPlus)))/(kk*wPlus),-((AA*Power(CC,2))/(kk*wPlus)),(CC*(-kk - (AA + BB)*(AA + BB - 2*wPlus)))/(4.*kk*wPlus),
+    (-4*AA*CC*DD + Power(AA,2)*(BB - wPlus) - (Power(BB,2) + kk)*(BB - wPlus))/(4.*kk*wPlus)))
+
+
+def ratio(AA,BB,CC,DD):
+    
+    wMinus = wM(AA,BB,CC,DD)
+    wPlus = wP(AA,BB,CC,DD)
+
+
+    return expAlpha(AA,BB,CC,DD)/ expBeta(AA,BB,CC,DD)
 
 # Define a function to convert tuple strings to complex numbers
 def parse_complex(tuple_str):
@@ -61,16 +109,16 @@ def main():
     # open relevant files:
 
     # magnon dispersion relation
-    file_magnon = 'scripts/Data/numbersJIso.txt'
+    file_magnon = 'scripts/Data/bccFe_disp_rel/numbersJIso.txt'
     # phonon dispersion relation
-    file_phonon = 'scripts/Data/numbersPh.txt'
+    file_phonon = 'scripts/Data/bccFe_disp_rel/numbersPh.txt'
     # DMI-like coupling parameters
-    file_DMIlike = 'scripts/Data/numbersD.txt'
+    file_DMIlike = 'scripts/Data/bccFe_disp_rel/numbersD.txt'
 
 
-    file_DMIlike = "Outputs/numbersD.txt"
-    file_phonon = "Outputs/numbersPh.txt"
-    file_magnon = "Outputs/numbersJIso.txt"
+    #file_DMIlike = "Outputs/numbersD.txt"
+    #file_phonon = "Outputs/numbersPh.txt"
+    #file_magnon = "Outputs/numbersJIso.txt"
 
     data_ph = retrieve_data_from_file(file_phonon)
     data_mag = retrieve_data_from_file(file_magnon)
@@ -99,7 +147,7 @@ def main():
 
         kVectors[0], kVectors[1], kVectors[2] = data_ph[0][idx]
         ph_energy[idx][0], ph_energy[idx][1], ph_energy[idx][2] = data_ph[1][idx][:3]
-        mag_energy[idx] = data_mag[1][idx][0]
+        mag_energy[idx] = data_mag[1][idx][0] * 13.6 # Umrechnung von mRy auf meV!!!
 
         pol_vec[idx][0][0] = data_ph[1][idx][3]
         pol_vec[idx][1][0] = data_ph[1][idx][4]
@@ -128,7 +176,7 @@ def main():
 
     imaginary_unit = complex(0, 1)
     
-    S = 4.8
+    S = 1.115
     atomic_mass = 55.845  # in Dalton
     d_aniso = 6.97 * 1E-3  # anisotropy energy in meV
 
@@ -146,16 +194,12 @@ def main():
     for idx in range(num_kVec):
 
         # correct the magnon dispersion relation so that it includes anisotropy and the max number of spin excitations S
-        mag_energy[idx] = S * (mag_energy[idx] + 2*d_aniso)
+        mag_energy[idx] = 1.0/S * (mag_energy[idx] + 2*d_aniso)
 
         # skip all points in k space where we have negative or null phonon energies:
         if ph_energy[idx][0] <= 0.0 or ph_energy[idx][1] <= 0.0 or ph_energy[idx][2] <= 0.0:
             continue
 
-        # scale phonon energy
-        #ph_energy[idx][0] *= .45
-        #ph_energy[idx][1] *= .45
-        #ph_energy[idx][2] *= .45
 
         C_coeff_all_branches = [0, 0, 0]
         D_coeff_all_branches = [0, 0, 0]
@@ -193,17 +237,18 @@ def main():
         C_coefficients.append(C_coeff_all_branches)
         D_coefficients.append(D_coeff_all_branches)
 
-    fig, axs = plt.subplots(ncols=1, nrows=3)
+    fig, axs = plt.subplots(ncols=1, nrows=3, sharex=True)
 
+    from matplotlib.colors import Normalize
+    import matplotlib.colors as mcolors
 
-    for branch in range(0, 1):
+    for branch in range(0, 3):
         wp = [wP(A_coefficients[idx][branch], B_coefficients[idx], C_coefficients[idx]
                  [branch], D_coefficients[idx][branch]).real for idx in range(len(x_values))]
         wm = [wM(A_coefficients[idx][branch], B_coefficients[idx], C_coefficients[idx]
                  [branch], D_coefficients[idx][branch]).real for idx in range(len(x_values))]
 
-        axs[0].scatter(x_values, [np.abs(C_coefficients[idx][branch].imag) for idx in range(len(x_values))], s=.5, label='imag')
-        axs[0].scatter(x_values, [np.abs(C_coefficients[idx][branch].real) for idx in range(len(x_values))], s=.5, label='real')
+        axs[0].scatter(x_values, [(C_coefficients[idx][branch]*D_coefficients[idx][branch]).real for idx in range(len(x_values))], s=.5, label=str(branch+1))
         
         # multiply the C and D coefficients: as they are complex conjugates, the product should be positive and real
         #axs[1].scatter(x_values, [(D_coefficients[idx][branch]*C_coefficients[idx][branch]).imag for idx in range(len(x_values))], s=.5, label='imag')
@@ -214,18 +259,50 @@ def main():
         #axs[1].scatter(x_values, [x[branch].imag for x in conjugate_check],label='imag')
 
 
-        axs[2].scatter(x_values, wm, s=.5, label='wM', c='b' )
-        axs[2].scatter(x_values, wp, s=.5, label='wM', c='b' )
+        Smatrix = [Smat(A_coefficients[idx][branch], B_coefficients[idx], C_coefficients[idx][branch], D_coefficients[idx][branch]) for idx in range(len(x_values))]
+        Sinvmatrix = [Sinvmat(A_coefficients[idx][branch], B_coefficients[idx], C_coefficients[idx][branch], D_coefficients[idx][branch]) for idx in range(len(x_values))]
+        
+        
+        r1 = [np.abs(S_comp[1][3]) for S_comp in Sinvmatrix ]
+        r2 = [np.abs(S_comp[0][3]) for S_comp in Sinvmatrix ]
 
-    for axis in range(3):
-        axs[1].plot(x_values, [D_minus_mu_coefficients[idx][axis].real for idx in range(len(x_values))], label=str(axis+1), linestyle='--')
-        axs[1].plot(x_values, [D_minus_mu_coefficients[idx][axis].imag for idx in range(len(x_values))], label=str(axis+1))
+        a1 = min(sorted(r1))
+        b1 = max(sorted(r1))
+        a2 = min(sorted(r2))
+        b2 = max(sorted(r2))
 
-    axs[0].legend()
+        """
+        norm1 = mcolors.Normalize(vmin=min(r1), vmax=max(r1))
+        norm2 = mcolors.Normalize(vmin=min(r2), vmax=max(r2))
+
+        cmap = plt.get_cmap('rainbow')
+        colors1 = r1  # This could be any array of values for coloring
+        colors2 = r2  # This could be any array of values for coloring
+
+
+        for i in range(len(x_values)-1):
+            x_vals = [x_values[i], x_values[i+1]]
+            y_vals_wm = [wm[i], wm[i+1]]
+            y_vals_wp = [wp[i], wp[i+1]]
+            color1 = cmap(norm1((colors1[i]+colors1[i+1])/2))
+            color2 = cmap(norm2((colors2[i]+colors2[i+1])/2))
+
+            axs[1].plot(x_vals, y_vals_wm, color=color1)
+            axs[1].plot(x_vals, y_vals_wp, color=color2)
+        """
+
+        axs[1].scatter(x_values, wm, s=0.6, alpha=0.7, c=r1, cmap="rainbow", norm=Normalize(vmin=a1, vmax=b1))
+        axs[1].scatter(x_values, wp, s=0.6, alpha=0.7, c=r2, cmap="rainbow", norm=Normalize(vmin=a2, vmax=b2))
+
+
+        axs[2].plot(x_values, [np.abs(S_comp[1][3]) for S_comp in Sinvmatrix ])
+        axs[2].plot(x_values, [np.abs(S_comp[0][3]) for S_comp in Sinvmatrix ])
+
+    axs[0].legend(title="branch")
     axs[1].legend()
 
-    axs[0].set_ylabel(r"$C_\mathbf{k}$")
-    axs[1].set_ylabel(r"$\mathcal{D}^{-,\mu}_\mathbf{k}$")
+    axs[0].set_ylabel(r"$C_\mathbf{k} D_\mathbf{k}$")
+    axs[1].set_ylabel(r"energy (meV)")
 
     plt.show()
 
@@ -240,7 +317,7 @@ def main():
     ph_data_conversion_factor = 1.907  # from mRy/(a.u.)^2 to meV
     D_data_conversion_factor = 1
 
-    data_mag[1] = [[E[0] * mag_data_conversion_factor]  for E in data_mag[1]]
+    data_mag[1] = [[E[0] * mag_data_conversion_factor for E in data_mag[1]]
 
     for idx in range(len(data_ph[1])):
         data_ph[1][idx][:3]  = [E*ph_data_conversion_factor for E in data_ph[1][idx][:3]]

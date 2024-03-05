@@ -4,6 +4,15 @@
 #include <cmath>
 #include <iostream>
 
+
+// Kartesian coordinate axes
+enum Axis
+{
+    X,
+    Y,
+    Z
+};
+
 void eigenMatrixToCArray(const Eigen::Matrix3d& eigenMatrix, double array[3][3]);
 
 
