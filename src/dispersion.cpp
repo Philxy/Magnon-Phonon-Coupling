@@ -88,7 +88,7 @@ std::vector<PhononDispParam> getPhononDispersion(std::string dynamicMatricesFile
 
         for (int row = 0; row < 3; row++)
         {
-            phDispParam.E[row] = eigenvalues.row(row).x().real();
+            phDispParam.E[row] = sqrt(abs(eigenvalues.row(row).x().real()) / atomic_mass) * 14.25133727;
             for (int col = 0; col < 3; col++)
             {
                 phDispParam.polVectors[row][col] = eigenvectors.row(row).col(col).x().real();

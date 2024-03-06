@@ -16,7 +16,6 @@ void Diagonalization::calcCD()
 
     for (int branch = 0; branch < 3; branch++)
     {
-
         for (int axis = 0; axis < 3; axis++)
         {
             std::complex<double> D_plus = D_k_values_minus.D[0][axis] + i * D_k_values_minus.D[1][axis];
@@ -99,9 +98,13 @@ Eigen::MatrixXd getMatrix_g()
 void Diagonalization::diagonalize()
 {
     Eigen::ComplexEigenSolver<Eigen::MatrixXcd> solver;
-    solver.compute(getMatrix_g() * matrixHamiltonian, true);
+    Eigen::MatrixXcd matrix = getMatrix_g() * matrixHamiltonian;
+    solver.compute(matrix, true);
+
+    std::cout << solver.eigenvalues() << std::endl;
 
     eigenvectors = solver.eigenvectors();
+    eigenvectors_inverse = solver.eigenvectors().inverse();
 
     // Loop over each eigenvalue
     for (int i = 0; i < solver.eigenvalues().size(); ++i)

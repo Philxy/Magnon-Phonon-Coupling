@@ -19,6 +19,7 @@ struct Diagonalization
 
     std::vector<double> eigenEnergies;
     Eigen::MatrixXcd eigenvectors;
+    Eigen::MatrixXcd eigenvectors_inverse;
 
     Diagonalization(const std::vector<CouplingParameter> &couplingParameters, PhononDispParam &phDispParam, const MagnonDispParam &magDispParam, const Vector3D &kVec, double atomicMass, double S);
 

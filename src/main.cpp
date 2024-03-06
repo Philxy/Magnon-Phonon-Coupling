@@ -10,7 +10,7 @@
 
 int main()
 {
-    std::vector<Vector3D> path = constructPath(100, 1);
+    std::vector<Vector3D> path = constructPath(4000, 1);
 
     const double ATOMIC_MASS = 55.845; // atomic mass given in Dalton
     const double S = 1.1;
@@ -43,7 +43,9 @@ int main()
     parameters.insert(parameters.begin(), ij_uk_y_parameter.begin(), ij_uk_y_parameter.end());
     parameters.insert(parameters.begin(), ij_uk_z_parameter.begin(), ij_uk_z_parameter.end());
 
-    std::ofstream outFileEV("Outputs/8x8Eigenenergies.txt");
+    std::ofstream outFileEV("Outputs/8x8EigenenergiesL.txt");
+    std::ofstream outFileCD("Outputs/8x8CDL.txt");
+    std::ofstream outFileEVectors("Outputs/8x8EVecL.txt");
 
     for (int idx = 0; idx < path.size(); idx++)
     {
@@ -53,13 +55,36 @@ int main()
         diag.diagonalize();
 
         outFileEV << diag.k.x << "," << diag.k.y << "," << diag.k.z << ",";
+        outFileCD << diag.k.x << "," << diag.k.y << "," << diag.k.z << ",";
+        outFileEVectors << diag.k.x << "," << diag.k.y << "," << diag.k.z << ",";
+
         for (int i = 0; i < 7; i++)
         {
             outFileEV << diag.eigenEnergies.at(i) << ",";
         }
         outFileEV << diag.eigenEnergies.at(7) << "\n";
+
+        outFileCD << diag.C.at(0) << "," << diag.C.at(1) << "," << diag.C.at(2) << "," << diag.D.at(0) << "," << diag.D.at(1) << "," << diag.D.at(2) << "\n";
+
+        for (int col = 0; col < 8; col++)
+        {
+            for (int row = 0; row < 8; row++)
+            {
+                outFileEVectors << diag.eigenvectors_inverse.col(col).row(row).x();
+                if (row == 7 && col == 7)
+                {
+                    outFileEVectors << "\n";
+                }
+                else
+                {
+                    outFileEVectors << ",";
+                }
+            }
+        }
     }
+    outFileEVectors.close();
     outFileEV.close();
+    outFileCD.close();
 
     return 0;
 
@@ -90,7 +115,7 @@ int main()
 
     return 0;
     */
-   
+
     std::ofstream outFile("Outputs/numbersDTest.txt");
 
     if (!outFile.is_open())
