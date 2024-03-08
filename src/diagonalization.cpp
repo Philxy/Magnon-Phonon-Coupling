@@ -43,30 +43,61 @@ void Diagonalization::calcMatrixHamiltonian()
 
     for (int branch = 0; branch < 3; branch++)
     {
+
+        /*
+        if (branch == 3)
+        {
+            C.at(branch) = 0;
+            D.at(branch) = 0;
+        }
+        */
+
         // Diagonal phonon elements
         double E_k_branch = phDisp.E[branch];
         matrixHamiltonian(branch, branch) = E_k_branch;
         matrixHamiltonian(branch + 4, branch + 4) = E_k_branch;
 
         // off-diagonal components
-
         // upper right quadrant
-        matrixHamiltonian(branch, 7) = D.at(branch);     // D.at(branch);
-        matrixHamiltonian(3, 4 + branch) = D.at(branch); // D.at(branch);
+        matrixHamiltonian(branch, 7) = D.at(branch);
+        matrixHamiltonian(3, 4 + branch) = D.at(branch);
         // lower left quadrant
-        matrixHamiltonian(4 + branch, 3) = C.at(branch); // C.at(branch);
-        matrixHamiltonian(7, branch) = C.at(branch);     // C.at(branch);
+        matrixHamiltonian(4 + branch, 3) = C.at(branch);
+        matrixHamiltonian(7, branch) = C.at(branch);
         // upper left quadrant
-        matrixHamiltonian(branch, 3) = C.at(branch); // C.at(branch);
-        matrixHamiltonian(3, branch) = D.at(branch); // D.at(branch);
+        matrixHamiltonian(branch, 3) = C.at(branch);
+        matrixHamiltonian(3, branch) = D.at(branch);
         // lower right quadrant
-        matrixHamiltonian(4 + branch, 7) = D.at(branch); // D.at(branch);
-        matrixHamiltonian(7, 4 + branch) = C.at(branch); // C.at(branch);
+        matrixHamiltonian(4 + branch, 7) = D.at(branch);
+        matrixHamiltonian(7, 4 + branch) = C.at(branch);
+
+        /*
+        // isolate a mode
+        int c = 2;
+        if (branch != c)
+        {
+            matrixHamiltonian(branch, 7) = 0;     // D.at(branch);
+            matrixHamiltonian(3, 4 + branch) = 0; // D.at(branch);
+            // lower left quadrant
+            matrixHamiltonian(4 + branch, 3) = 0; // C.at(branch);
+            matrixHamiltonian(7, branch) = 0;     // C.at(branch);
+            // upper left quadrant
+            matrixHamiltonian(branch, 3) = 0; // C.at(branch);
+            matrixHamiltonian(3, branch) = 0; // D.at(branch);
+            // lower right quadrant
+            matrixHamiltonian(4 + branch, 7) = 0; // D.at(branch);
+            matrixHamiltonian(7, 4 + branch) = 0; // C.at(branch);
+
+            matrixHamiltonian(branch, branch) = 0;
+            matrixHamiltonian(branch + 4, branch + 4) = 0;
+        }
+        */
     }
 
     double E_k_mag = magDisp.energy;
     matrixHamiltonian(3, 3) = E_k_mag;
     matrixHamiltonian(7, 7) = E_k_mag;
+
     return;
 }
 
@@ -100,8 +131,6 @@ void Diagonalization::diagonalize()
     Eigen::ComplexEigenSolver<Eigen::MatrixXcd> solver;
     Eigen::MatrixXcd matrix = getMatrix_g() * matrixHamiltonian;
     solver.compute(matrix, true);
-
-    std::cout << solver.eigenvalues() << std::endl;
 
     eigenvectors = solver.eigenvectors();
     eigenvectors_inverse = solver.eigenvectors().inverse();

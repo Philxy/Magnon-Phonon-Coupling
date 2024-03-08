@@ -68,6 +68,8 @@ std::vector<Vector3D> constructPath(int number_of_k_vectors, double lattice_cons
     return kVectors;
 }
 
+/*
+
 // Generates a uniform grid in the Brillouin zone using Monkhorst–Pack sampling
 // (for a bcc lattice atm. Change reciprocal lattice vectors to do this for other lattices!?)
 std::vector<Vector3D> sampleBZ(int gridSize)
@@ -96,3 +98,5 @@ std::vector<Vector3D> sampleBZ(int gridSize)
     }
     return grid;
 }
+
+*/

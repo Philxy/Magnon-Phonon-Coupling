@@ -35,7 +35,6 @@ std::vector<MagnonDispParam> getMagneticDispersion(std::string couplingParameter
 // Calculates phonon-phonon dispersion relation
 std::vector<PhononDispParam> getPhononDispersion(std::string dynamicMatricesFile, std::string nextNeighbourFile, std::string phononDispOutputPath, std::vector<Vector3D> path, double atomic_mass)
 {
-
     // Units:
     // Calculate the eigenenergies from the eigenvalues in meV
     // assuming the eigenvalues have units of mRy/(a.u.)^2
@@ -66,6 +65,8 @@ std::vector<PhononDispParam> getPhononDispersion(std::string dynamicMatricesFile
     std::ofstream outFilePh(phononDispOutputPath);
     outFilePh << "kx,ky,kz,omega1,omega2,omega3,e1x,e1y,e1z,e2x,e2y,e2z,e3x,e3y,e3z\n";
 
+    std::vector<Eigen::Vector3cd> all_eigenvalues;
+
     for (const Vector3D &k : path)
     {
         // Solve the eigenvalue problem
@@ -86,9 +87,13 @@ std::vector<PhononDispParam> getPhononDispersion(std::string dynamicMatricesFile
         phDispParam.ky = k.y;
         phDispParam.kz = k.z;
 
+        phDispParam.E[0] = E1;
+        phDispParam.E[1] = E2;
+        phDispParam.E[2] = E3;
+
         for (int row = 0; row < 3; row++)
         {
-            phDispParam.E[row] = sqrt(abs(eigenvalues.row(row).x().real()) / atomic_mass) * 14.25133727;
+
             for (int col = 0; col < 3; col++)
             {
                 phDispParam.polVectors[row][col] = eigenvectors.row(row).col(col).x().real();
@@ -101,6 +106,7 @@ std::vector<PhononDispParam> getPhononDispersion(std::string dynamicMatricesFile
 
         outFilePh << k.x << "," << k.y << "," << k.z << "," << E1 << "," << E2 << "," << E3 << "," << eigenvectors.col(0).x().real() << "," << eigenvectors.col(0).y().real() << "," << eigenvectors.col(0).z().real() << "," << eigenvectors.col(1).x().real() << "," << eigenvectors.col(1).y().real() << "," << eigenvectors.col(1).z().real() << "," << eigenvectors.col(2).x().real() << "," << eigenvectors.col(2).y().real() << "," << eigenvectors.col(2).z().real() << "\n";
     }
+
     outFilePh.close();
     return phononDisp;
 }

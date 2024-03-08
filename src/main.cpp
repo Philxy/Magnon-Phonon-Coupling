@@ -7,10 +7,18 @@
 #include "../include/util.h"
 #include "../include/dispersion.h"
 #include "../include/diagonalization.h"
+#include "../include/dynamics.h"
 
 int main()
 {
-    std::vector<Vector3D> path = constructPath(4000, 1);
+
+
+    
+
+
+
+
+    std::vector<Vector3D> path = constructPath(100, 1);
 
     const double ATOMIC_MASS = 55.845; // atomic mass given in Dalton
     const double S = 1.1;
@@ -43,12 +51,23 @@ int main()
     parameters.insert(parameters.begin(), ij_uk_y_parameter.begin(), ij_uk_y_parameter.end());
     parameters.insert(parameters.begin(), ij_uk_z_parameter.begin(), ij_uk_z_parameter.end());
 
-    std::ofstream outFileEV("Outputs/8x8EigenenergiesL.txt");
-    std::ofstream outFileCD("Outputs/8x8CDL.txt");
-    std::ofstream outFileEVectors("Outputs/8x8EVecL.txt");
+
+    Coefficients coeff;
+
+    coeff.initReciprocalLatticeVectors();
+    coeff.init(parameters);
+
+
+    /*
+    // Diagonalisation
+    std::ofstream outFileEV("Outputs/8x8Eigenenergies.txt");
+    std::ofstream outFileCD("Outputs/8x8CD.txt");
+    std::ofstream outFileEVectors("Outputs/8x8EVec.txt");
 
     for (int idx = 0; idx < path.size(); idx++)
     {
+        std::cout << "Progress: " << idx/double(path.size()) << "\n"; 
+
         Diagonalization diag(parameters, phononDispersion.at(idx), magnonDispersion.at(idx), path.at(idx), ATOMIC_MASS, S);
         diag.calcCD();
         diag.calcMatrixHamiltonian();
@@ -85,8 +104,7 @@ int main()
     outFileEVectors.close();
     outFileEV.close();
     outFileCD.close();
-
-    return 0;
+    */
 
     /*
     std::vector<std::vector<double>> allEigenenergies = diagonalizeHamiltonian(path, phononDispersion, magnonDispersion, parameters);

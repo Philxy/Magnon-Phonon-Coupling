@@ -12,14 +12,12 @@
 #include "fourierTransform.h"
 #include "util.h"
 
-
 struct PhononDispParam
 {
     double kx, ky, kz;
-    double E[3]; // energy for the phonon modes
-    double polVectors[3][3]; // polarization vectors - each column represents a pol vec 
+    double E[3];             // energy for the phonon modes
+    double polVectors[3][3]; // polarization vectors - each column represents a pol vec
 };
-
 
 struct MagnonDispParam
 {

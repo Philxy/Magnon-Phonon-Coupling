@@ -173,3 +173,13 @@ Eigen::Matrix3d forceMatrix(double x, double y, double z, const std::vector<Coup
 
     return result_real;
 }
+
+
+std::complex<double> J_kq(double kx, double ky, double kz, double qx, double qy, double qz, const std::vector<CouplingParameter> &params, Axis alpha, Axis beta, Axis mu)
+{
+    std::complex<double> result(0,0);
+
+    // remains to be implemented
+
+    return result;
+}
