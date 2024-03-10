@@ -40,15 +40,13 @@ std::complex<double> FTD(double kx, double ky, double kz, const std::vector<Coup
     return result;
 }
 
-
 DMILikeCouplingParam::DMILikeCouplingParam(double kx, double ky, double kz, const std::vector<CouplingParameter> &parameters)
 {
     this->kx = kx;
     this->ky = ky;
     this->kz = kz;
 
-    std::vector<Axis> allAxis = {X,Y,Z};
-
+    std::vector<Axis> allAxis = {X, Y, Z};
 
     for (Axis axis : allAxis)
     {
@@ -56,7 +54,6 @@ DMILikeCouplingParam::DMILikeCouplingParam(double kx, double ky, double kz, cons
         this->D[axis][Y] = FTD(kx, ky, kz, parameters, axis, Y);
     }
 }
-
 
 /*
 std::complex<double> FTD(double kx1, double ky1, double kz1, double kx2, double ky2, double kz2, const std::vector<CouplingParameter> &params, Axis nu, Axis mu)
@@ -174,12 +171,22 @@ Eigen::Matrix3d forceMatrix(double x, double y, double z, const std::vector<Coup
     return result_real;
 }
 
-
 std::complex<double> J_kq(double kx, double ky, double kz, double qx, double qy, double qz, const std::vector<CouplingParameter> &params, Axis alpha, Axis beta, Axis mu)
 {
-    std::complex<double> result(0,0);
+    std::complex<double> result(0, 0);
+    const std::complex<double> i(0.0, 1.0);
 
-    // remains to be implemented
+    for (int idx = 0; idx < params.size(); idx++)
+    {
 
+        const CouplingParameter &p = params.at(idx);
+
+        if (p.displacementDirection != mu)
+        {
+            continue;
+        }
+
+        result += p.J[alpha][beta] * std::exp(+i * (kx * p.x_ij + ky * p.y_ij + kz * p.z_ij) + i * (qx * p.x_jk + qy * p.y_jk + qz * p.z_jk));
+    }
     return result;
 }

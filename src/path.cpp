@@ -84,7 +84,7 @@ std::vector<Vector3D> sampleBZ(int gridSize)
     Vector3D b3(2 * PI / a, 0, 2 * PI / a);
 
     for (int i = 1; i <= gridSize; i++)
-    {
+    {sampleBZ
         for (int j = 1; j <= gridSize; j++)
         {
             for (int m = 1; m <= gridSize; m++)

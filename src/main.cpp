@@ -12,12 +12,6 @@
 int main()
 {
 
-
-    
-
-
-
-
     std::vector<Vector3D> path = constructPath(100, 1);
 
     const double ATOMIC_MASS = 55.845; // atomic mass given in Dalton
@@ -51,12 +45,17 @@ int main()
     parameters.insert(parameters.begin(), ij_uk_y_parameter.begin(), ij_uk_y_parameter.end());
     parameters.insert(parameters.begin(), ij_uk_z_parameter.begin(), ij_uk_z_parameter.end());
 
+    SamplingGrid samplingGrid;
 
-    Coefficients coeff;
 
-    coeff.initReciprocalLatticeVectors();
-    coeff.init(parameters);
 
+    samplingGrid.initMonkhorstPack();
+
+    samplingGrid.initMagnonDisp("Parameters/J_bccFe.txt", S);
+    samplingGrid.initPhononDisp("Parameters/dynMat_16x16x16.txt", "Parameters/nn4.txt", ATOMIC_MASS);
+    samplingGrid.init(parameters);
+
+    return 0;
 
     /*
     // Diagonalisation
@@ -66,7 +65,7 @@ int main()
 
     for (int idx = 0; idx < path.size(); idx++)
     {
-        std::cout << "Progress: " << idx/double(path.size()) << "\n"; 
+        std::cout << "Progress: " << idx/double(path.size()) << "\n";
 
         Diagonalization diag(parameters, phononDispersion.at(idx), magnonDispersion.at(idx), path.at(idx), ATOMIC_MASS, S);
         diag.calcCD();
