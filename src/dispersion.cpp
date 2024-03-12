@@ -1,7 +1,7 @@
 #include "../include/dispersion.h"
 
 // Calculates the magnon-magnon dispersion relation and writes it to a file based on the isotropic Heisenberg exchange between neighbors given in a file
-std::vector<MagnonDispParam> getMagneticDispersion(std::string couplingParameterFile, std::string magnonDispOutputPath, std::vector<Vector3D> path, double S)
+std::vector<MagnonDispParam> getMagneticDispersion(std::string couplingParameterFile, std::string magnonDispOutputPath, std::vector<Vector3D> path)
 {
     // units: The isotropic Heisenberg exchange parameters are assumed to be in mRy and they are converted to meV
     const double conversionFactor = 13.606;
@@ -31,7 +31,7 @@ std::vector<MagnonDispParam> getMagneticDispersion(std::string couplingParameter
     return magnonDisp;
 }
 
-std::vector<MagnonDispParam> getMagneticDispersion(std::string couplingParameterFile, std::vector<Vector3D> path, double S)
+std::vector<MagnonDispParam> getMagneticDispersion(std::string couplingParameterFile, std::vector<Vector3D> path)
 {
     // units: The isotropic Heisenberg exchange parameters are assumed to be in mRy and they are converted to meV
     const double conversionFactor = 13.606;
@@ -57,7 +57,7 @@ std::vector<MagnonDispParam> getMagneticDispersion(std::string couplingParameter
 }
 
 // Calculates phonon-phonon dispersion relation
-std::vector<PhononDispParam> getPhononDispersion(std::string dynamicMatricesFile, std::string nextNeighbourFile, std::string phononDispOutputPath, std::vector<Vector3D> path, double atomic_mass)
+std::vector<PhononDispParam> getPhononDispersion(std::string dynamicMatricesFile, std::string nextNeighbourFile, std::string phononDispOutputPath, std::vector<Vector3D> path)
 {
     // Units:
     // Calculate the eigenenergies from the eigenvalues in meV
@@ -102,9 +102,9 @@ std::vector<PhononDispParam> getPhononDispersion(std::string dynamicMatricesFile
         // makeEigenvaluesPositive(eigenvalues, eigenvectors);
         changeEigenVecSign(eigenvectors);
 
-        double E1 = sqrt(abs(eigenvalues.x().real()) / atomic_mass) * 14.25133727;
-        double E2 = sqrt(abs(eigenvalues.y().real()) / atomic_mass) * 14.25133727;
-        double E3 = sqrt(abs(eigenvalues.z().real()) / atomic_mass) * 14.25133727;
+        double E1 = sqrt(abs(eigenvalues.x().real()) / atomicMass) * 14.25133727;
+        double E2 = sqrt(abs(eigenvalues.y().real()) / atomicMass) * 14.25133727;
+        double E3 = sqrt(abs(eigenvalues.z().real()) / atomicMass) * 14.25133727;
 
         PhononDispParam phDispParam;
         phDispParam.kx = k.x;
@@ -135,7 +135,7 @@ std::vector<PhononDispParam> getPhononDispersion(std::string dynamicMatricesFile
     return phononDisp;
 }
 
-std::vector<PhononDispParam> getPhononDispersion(std::string dynamicMatricesFile, std::string nextNeighbourFile, std::vector<Vector3D> path, double atomic_mass)
+std::vector<PhononDispParam> getPhononDispersion(std::string dynamicMatricesFile, std::string nextNeighbourFile, std::vector<Vector3D> path)
 {
     // Units:
     // Calculate the eigenenergies from the eigenvalues in meV
@@ -177,9 +177,9 @@ std::vector<PhononDispParam> getPhononDispersion(std::string dynamicMatricesFile
         // makeEigenvaluesPositive(eigenvalues, eigenvectors);
         changeEigenVecSign(eigenvectors);
 
-        double E1 = sqrt(abs(eigenvalues.x().real()) / atomic_mass) * 14.25133727;
-        double E2 = sqrt(abs(eigenvalues.y().real()) / atomic_mass) * 14.25133727;
-        double E3 = sqrt(abs(eigenvalues.z().real()) / atomic_mass) * 14.25133727;
+        double E1 = sqrt(abs(eigenvalues.x().real()) / atomicMass) * 14.25133727;
+        double E2 = sqrt(abs(eigenvalues.y().real()) / atomicMass) * 14.25133727;
+        double E3 = sqrt(abs(eigenvalues.z().real()) / atomicMass) * 14.25133727;
 
         PhononDispParam phDispParam;
         phDispParam.kx = k.x;

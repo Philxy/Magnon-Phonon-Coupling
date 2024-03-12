@@ -5,6 +5,7 @@
 #include "path.h"
 #include "dispersion.h"
 #include "util.h"
+#include "globals.h"
 
 struct Diagonalization
 {
@@ -12,8 +13,6 @@ struct Diagonalization
     MagnonDispParam magDisp;
     Vector3D k;
     std::vector<std::complex<double>> C, D;
-    double atomic_mass;
-    double S;
     std::vector<CouplingParameter> couplingParameters;
     Eigen::MatrixXcd matrixHamiltonian;
 
@@ -21,7 +20,7 @@ struct Diagonalization
     Eigen::MatrixXcd eigenvectors;
     Eigen::MatrixXcd eigenvectors_inverse;
 
-    Diagonalization(const std::vector<CouplingParameter> &couplingParameters, PhononDispParam &phDispParam, const MagnonDispParam &magDispParam, const Vector3D &kVec, double atomicMass, double S);
+    Diagonalization(const std::vector<CouplingParameter> &couplingParameters, PhononDispParam &phDispParam, const MagnonDispParam &magDispParam, const Vector3D &kVec);
 
     void calcCD();
     void calcMatrixHamiltonian();

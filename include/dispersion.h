@@ -11,6 +11,7 @@
 #include "path.h"
 #include "fourierTransform.h"
 #include "util.h"
+#include "globals.h"
 
 struct PhononDispParam
 {
@@ -25,8 +26,8 @@ struct MagnonDispParam
     double energy;
 };
 
-std::vector<MagnonDispParam> getMagneticDispersion(std::string couplingParameterFile, std::string magnonDispOutputPath, std::vector<Vector3D> path, double S);
-std::vector<MagnonDispParam> getMagneticDispersion(std::string couplingParameterFile, std::vector<Vector3D> path, double S);
+std::vector<MagnonDispParam> getMagneticDispersion(std::string couplingParameterFile, std::string magnonDispOutputPath, std::vector<Vector3D> path);
+std::vector<MagnonDispParam> getMagneticDispersion(std::string couplingParameterFile, std::vector<Vector3D> path);
 
-std::vector<PhononDispParam> getPhononDispersion(std::string dynamicMatricesFile, std::string nextNeighbourFile, std::string phononDispOutputPath, std::vector<Vector3D> path, double atomic_mass);
-std::vector<PhononDispParam> getPhononDispersion(std::string dynamicMatricesFile, std::string nextNeighbourFile, std::vector<Vector3D> path, double atomic_mass);
+std::vector<PhononDispParam> getPhononDispersion(std::string dynamicMatricesFile, std::string nextNeighbourFile, std::string phononDispOutputPath, std::vector<Vector3D> path);
+std::vector<PhononDispParam> getPhononDispersion(std::string dynamicMatricesFile, std::string nextNeighbourFile, std::vector<Vector3D> path);

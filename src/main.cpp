@@ -9,19 +9,18 @@
 #include "../include/diagonalization.h"
 #include "../include/dynamics.h"
 
+#include <chrono>
+
 int main()
 {
 
-    std::vector<Vector3D> path = constructPath(100, 1);
-
-    const double ATOMIC_MASS = 55.845; // atomic mass given in Dalton
-    const double S = 1.1;
+    std::vector<Vector3D> path = constructPath(1000, 1);
 
     // Calculates phonon dispersion relation
-    std::vector<PhononDispParam> phononDispersion = getPhononDispersion("Parameters/dynMat_16x16x16.txt", "Parameters/nn4.txt", "Outputs/numbersPhTest.txt", path, ATOMIC_MASS);
+    std::vector<PhononDispParam> phononDispersion = getPhononDispersion("Parameters/dynMat_16x16x16.txt", "Parameters/nn5.txt", "Outputs/numbersPh.txt", path);
 
     // Calculate magnon dispersion relation
-    std::vector<MagnonDispParam> magnonDispersion = getMagneticDispersion("Parameters/J_bccFe.txt", "Outputs/numbersJIso_test.txt", path, S);
+    std::vector<MagnonDispParam> magnonDispersion = getMagneticDispersion("Parameters/J_bccFe.txt", "Outputs/numbersJIso.txt", path);
 
     std::vector<CouplingParameter> parameters;  // contains all the parameters
     std::vector<CouplingParameter> parametersX; // contains all the parameters with x displacement
@@ -45,17 +44,46 @@ int main()
     parameters.insert(parameters.begin(), ij_uk_y_parameter.begin(), ij_uk_y_parameter.end());
     parameters.insert(parameters.begin(), ij_uk_z_parameter.begin(), ij_uk_z_parameter.end());
 
+    SymmetrieGroup symGroups;
+    symGroups.init("Parameters/symmetrieMatrices.txt");
+
+    IrreducibleBZ irrBZ;
+    irrBZ.symmetrieGroup = symGroups;
+    irrBZ.init("Parameters/irrPoints_16x16.txt");
+
+    irrBZ.initMagnonDisp("Parameters/J_bccFe.txt");
+    irrBZ.initPhononDisp("Parameters/dynMat_16x16x16.txt", "Parameters/nn5.txt");
+
+    for (auto vec : irrBZ.irreducibleBZVectors)
+    {
+        std::cout << "Irreducible point: " << vec(0) << " " << vec(1) << " " << vec(2) << std::endl;
+    }
+
+    for (auto mat : symGroups.symmetrieOperations)
+    {
+        std::cout << "Symmetrie matrix: " << mat << std::endl;
+    }
+
+    std::cout << "Number of symmetry operations: " << symGroups.symmetrieOperations.size() << std::endl;
+
+    /*
+    using namespace std::chrono;
+
     SamplingGrid samplingGrid;
-
-
-
     samplingGrid.initMonkhorstPack();
-
-    samplingGrid.initMagnonDisp("Parameters/J_bccFe.txt", S);
-    samplingGrid.initPhononDisp("Parameters/dynMat_16x16x16.txt", "Parameters/nn4.txt", ATOMIC_MASS);
+    samplingGrid.initMagnonDisp("Parameters/J_bccFe.txt");
+    samplingGrid.initPhononDisp("Parameters/dynMat_16x16x16.txt", "Parameters/nn5.txt");
+    auto start = high_resolution_clock::now();
     samplingGrid.init(parameters);
+    auto stop = high_resolution_clock::now();
+
+    auto duration = duration_cast<milliseconds>(stop - start);
+
+    // Output the execution time
+    std::cout << "Function execution took " << duration.count() << " milliseconds" << std::endl;
 
     return 0;
+    */
 
     /*
     // Diagonalisation
@@ -65,9 +93,9 @@ int main()
 
     for (int idx = 0; idx < path.size(); idx++)
     {
-        std::cout << "Progress: " << idx/double(path.size()) << "\n";
+        std::cout << "Progress: " << idx / double(path.size()) << "\n";
 
-        Diagonalization diag(parameters, phononDispersion.at(idx), magnonDispersion.at(idx), path.at(idx), ATOMIC_MASS, S);
+        Diagonalization diag(parameters, phononDispersion.at(idx), magnonDispersion.at(idx), path.at(idx));
         diag.calcCD();
         diag.calcMatrixHamiltonian();
         diag.diagonalize();
@@ -103,35 +131,11 @@ int main()
     outFileEVectors.close();
     outFileEV.close();
     outFileCD.close();
-    */
-
-    /*
-    std::vector<std::vector<double>> allEigenenergies = diagonalizeHamiltonian(path, phononDispersion, magnonDispersion, parameters);
-
-    std::ofstream outFileEV("Outputs/8x8Eigenenergies.txt");
-
-    int counter = 0;
-    for (auto eigenenergies : allEigenenergies)
-    {
-
-        outFileEV << path.at(counter).x << "," << path.at(counter).y << "," << path.at(counter).z << ",";
-
-        if (eigenenergies.size() == 0)
-        {
-            continue;
-        }
-        for (int i = 0; i < 7; i++)
-        {
-            outFileEV << eigenenergies.at(i) << ",";
-        }
-        outFileEV << eigenenergies.at(7) << "\n";
-        counter++;
-    }
-
-    outFileEV.close();
 
     return 0;
     */
+
+    /*
 
     std::ofstream outFile("Outputs/numbersDTest.txt");
 
@@ -170,6 +174,10 @@ int main()
     }
 
     outFile.close();
+
+    return 0;
+
+    */
 
     /*
     // Calculates the magnon-magnon interaction DOS by sampling the BZ
