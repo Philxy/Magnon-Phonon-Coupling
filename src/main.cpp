@@ -17,10 +17,10 @@ int main()
     std::vector<Vector3D> path = constructPath(1000, 1);
 
     // Calculates phonon dispersion relation
-    std::vector<PhononDispParam> phononDispersion = getPhononDispersion("Parameters/dynMat_16x16x16.txt", "Parameters/nn5.txt", "Outputs/numbersPh.txt", path);
+    std::vector<PhononDispParam> phononDispersion = getPhononDispersion("Parameters/dynMat_20x20x20.txt", "Parameters/nn6.txt", "Outputs/numbersPh_20x20x20.txt", path);
 
     // Calculate magnon dispersion relation
-    std::vector<MagnonDispParam> magnonDispersion = getMagneticDispersion("Parameters/J_bccFe.txt", "Outputs/numbersJIso.txt", path);
+    std::vector<MagnonDispParam> magnonDispersion = getMagneticDispersion("Parameters/J_bccFe.txt", "Outputs/numbersJIso_20x20.txt", path);
 
     std::vector<CouplingParameter> parameters;  // contains all the parameters
     std::vector<CouplingParameter> parametersX; // contains all the parameters with x displacement
@@ -40,56 +40,15 @@ int main()
     // parameters.insert(parameters.end(), ij_uk_y_parameter.begin(), ij_uk_y_parameter.end());
     // parameters.insert(parameters.end(), ij_uk_z_parameter.begin(), ij_uk_z_parameter.end());
 
-    parameters.insert(parameters.begin(), ij_uk_x_parameter.begin(), ij_uk_x_parameter.end());
-    parameters.insert(parameters.begin(), ij_uk_y_parameter.begin(), ij_uk_y_parameter.end());
-    parameters.insert(parameters.begin(), ij_uk_z_parameter.begin(), ij_uk_z_parameter.end());
-
-    SymmetrieGroup symGroups;
-    symGroups.init("Parameters/symmetrieMatrices.txt");
-
-    IrreducibleBZ irrBZ;
-    irrBZ.symmetrieGroup = symGroups;
-    irrBZ.init("Parameters/irrPoints_16x16.txt");
-
-    irrBZ.initMagnonDisp("Parameters/J_bccFe.txt");
-    irrBZ.initPhononDisp("Parameters/dynMat_16x16x16.txt", "Parameters/nn5.txt");
-
-    for (auto vec : irrBZ.irreducibleBZVectors)
-    {
-        std::cout << "Irreducible point: " << vec(0) << " " << vec(1) << " " << vec(2) << std::endl;
-    }
-
-    for (auto mat : symGroups.symmetrieOperations)
-    {
-        std::cout << "Symmetrie matrix: " << mat << std::endl;
-    }
-
-    std::cout << "Number of symmetry operations: " << symGroups.symmetrieOperations.size() << std::endl;
-
-    /*
-    using namespace std::chrono;
-
-    SamplingGrid samplingGrid;
-    samplingGrid.initMonkhorstPack();
-    samplingGrid.initMagnonDisp("Parameters/J_bccFe.txt");
-    samplingGrid.initPhononDisp("Parameters/dynMat_16x16x16.txt", "Parameters/nn5.txt");
-    auto start = high_resolution_clock::now();
-    samplingGrid.init(parameters);
-    auto stop = high_resolution_clock::now();
-
-    auto duration = duration_cast<milliseconds>(stop - start);
-
-    // Output the execution time
-    std::cout << "Function execution took " << duration.count() << " milliseconds" << std::endl;
-
-    return 0;
-    */
+    parameters.insert(parameters.end(), ij_uk_x_parameter.begin(), ij_uk_x_parameter.end());
+    parameters.insert(parameters.end(), ij_uk_y_parameter.begin(), ij_uk_y_parameter.end());
+    parameters.insert(parameters.end(), ij_uk_z_parameter.begin(), ij_uk_z_parameter.end());
 
     /*
     // Diagonalisation
-    std::ofstream outFileEV("Outputs/8x8Eigenenergies.txt");
-    std::ofstream outFileCD("Outputs/8x8CD.txt");
-    std::ofstream outFileEVectors("Outputs/8x8EVec.txt");
+    std::ofstream outFileEV("Outputs/8x8Eigenenergies_20x20.txt");
+    std::ofstream outFileCD("Outputs/8x8CD_20x20.txt");
+    std::ofstream outFileEVectors("Outputs/8x8EVec_20x20.txt");
 
     for (int idx = 0; idx < path.size(); idx++)
     {
@@ -131,6 +90,185 @@ int main()
     outFileEVectors.close();
     outFileEV.close();
     outFileCD.close();
+
+    return 0;
+    */
+
+    // init symmetry group
+    SymmetrieGroup symGroups;
+    symGroups.init("Parameters/symmNew.txt");
+    // init irreducible BZ
+    IrreducibleBZ irrBZ;
+    irrBZ.symmetryGroup = symGroups;
+    irrBZ.init("Parameters/irrPoints_8x8x8_mod.txt");
+    // init magnon and phonon dispersion
+    irrBZ.initMagnonDisp("Parameters/J_bccFe.txt");
+    irrBZ.initPhononDisp("Parameters/dynMat_8x8x8.txt", "Parameters/nn3.txt");
+
+    // init coefficients
+    //irrBZ.initCoefficients(parameters, nFT);
+    //irrBZ.saveCoefficientsAsSqrtAbs("Outputs/coefficients.txt");
+    irrBZ.readCoefficients("Outputs/coefficients.txt");
+    irrBZ.initOccNumbers();
+    irrBZ.initReciprocalLatticeVec();
+    irrBZ.init_k_prime();
+    irrBZ.integrate();
+
+    return 1;
+
+    // Check if the irr points are their own representative
+    // for (int i = 0; i < irrBZ.irreducibleBZVectors.size(); i++)
+    //{
+    //    Eigen::Vector3d vec = irrBZ.irreducibleBZVectors.at(i);
+    //    int representative = irrBZ.findRepresentative(vec);
+    //    if (representative != i)
+    //    {
+    //        std::cout << "Test failed" << std::endl;
+    //    }
+    //    else {
+    //        std::cout << "Test passed" << std::endl;
+    //    }
+    //}
+
+    // print symmetry groups
+    // for (auto mat : symGroups.symmetrieOperations)
+    //{
+    //    std::cout << "Symmetry matrix: " << mat << std::endl;
+    //}
+
+    /*
+    std::ofstream outputFile("Outputs/symmApplied.txt");
+
+    for (int j = 0; j < irrBZ.irreducibleBZVectors.size(); j++)
+    {
+        auto k = irrBZ.irreducibleBZVectors.at(j);
+        std::vector<Eigen::Vector3d> symApplied = irrBZ.symmetryGroup.applySymmetries(k);
+        for (int i = 0; i < symApplied.size(); i++)
+        {
+            auto k_prime = symApplied.at(i);
+            // int representant_idx = irrBZ.findRepresentative(k_prime);
+            outputFile << k_prime(0)/(2 * pi) << " " << k_prime(1)/(2 * pi) << " " << k_prime(2)/(2 * pi) << "\n"; // << " " << j << " " << representant_idx << "\n";
+        }
+    }
+    outputFile.close();
+    */
+
+    for (auto k : irrBZ.irreducibleBZVectors)
+    {
+        std::cout << "k: " << k(0) / (2 * pi) << " " << k(1) / (2 * pi) << " " << k(2) / (2 * pi) << std::endl;
+    }
+
+    int succ_count = 0;
+    int fail_count = 0;
+
+    for (auto k : irrBZ.irreducibleBZVectors)
+    {
+        for (auto k_prime : irrBZ.irreducibleBZVectors)
+        {
+            auto q = k - k_prime;
+            int representant_idx = irrBZ.findRepresentative(q);
+            if (representant_idx == -1)
+            {
+                fail_count++;
+                std::cout << "Error: Could not find representative" << std::endl;
+                std::cout << "k: " << k(0) / (2 * pi) << " " << k(1) / (2 * pi) << " " << k(2) / (2 * pi) << " | k_prime: " << k_prime(0) / (2 * pi) << " " << k_prime(1) / (2 * pi) << " " << k_prime(2) / (2 * pi) << " | q: " << q(0) / (2 * pi) << " " << q(1) / (2 * pi) << " " << q(2) / (2 * pi) << std::endl;
+            }
+            else
+            {
+                succ_count++;
+            }
+            // std::cout << "k: " << k(0) << " " << k(1) << " " << k(2) << " | k_prime: " << k_prime(0) << " " << k_prime(1) << " " << k_prime(2) << " | q: " << q(0) << " " << q(1) << " " << q(2) << " | representant: " << representant_idx << std::endl;
+        }
+    }
+
+    std::cout << "Success: " << succ_count << " | Fail: " << fail_count << std::endl;
+
+    /*
+    // Calculate the distance between all irreducible BZ vectors
+    std::vector<double> distances;
+    for (auto k : irrBZ.irreducibleBZVectors)
+    {
+        for (auto q : irrBZ.irreducibleBZVectors)
+        {
+            distances.push_back(distance(k, q));
+        }
+    }
+    std::sort(distances.begin(), distances.end(), std::greater<double>());
+
+    int counter = 0;
+    for (auto d : distances)
+    {
+        counter++;
+        std::cout << counter << "  " << d << std::endl;
+    }
+    return 0;
+   */
+
+    /*
+    std::vector<double> multiplicities(irrBZ.irreducibleBZVectors.size(), 0.0);
+    irrBZ.initMultiplicities();
+
+    std::vector<CouplingParameter> dynmat = readDynMatrices("Parameters/dynMat_8x8x8.txt");
+
+    for (int i = 0; i < dynmat.size(); i++)
+    {
+        auto D = dynmat.at(i);
+        // if (i >= 1)
+        //{
+        //     continue;
+        // }
+        const Eigen::Vector3d vec(D.kx, D.ky, D.kz);
+
+        int representative = irrBZ.findRepresentative(vec);
+        multiplicities.at(representative) += 1;
+        if (representative != -1)
+        {
+            // std::cout << "success" << std::endl;
+            //  std::cout << "vec - repr: " << vec(0) - irrBZ.irreducibleBZVectors.at(representative)(0) << " " << vec(1) - irrBZ.irreducibleBZVectors.at(representative)(1) << " " << vec(2) - irrBZ.irreducibleBZVectors.at(representative)(2) << std::endl;
+        }
+    }
+
+    for (int idx = 0; idx < multiplicities.size(); idx++)
+    {
+        std::cout << " | Multiplicity: " << multiplicities.at(idx) << " | vec: " << irrBZ.irreducibleBZVectors.at(idx)(0) << "," << irrBZ.irreducibleBZVectors.at(idx)(1) << "," << irrBZ.irreducibleBZVectors.at(idx)(2) << std::endl;
+    }
+    */
+
+    /*
+    for (auto vec : irrBZ.irreducibleBZVectors)
+    {
+        Eigen::Vector3d vecTemp = vec;
+        int representative = irrBZ.findRepresentative(vecTemp);
+        std::cout << "vec - repr: " << vec(0) - irrBZ.irreducibleBZVectors.at(representative)(0) << " " << vec(1) - irrBZ.irreducibleBZVectors.at(representative)(1) << " " << vec(2) - irrBZ.irreducibleBZVectors.at(representative)(2) << std::endl;
+    }
+
+    double sum = 0;
+
+    for (int i = 0; i < irrBZ.irreducibleBZVectors.size(); i++)
+    {
+        std::cout << "vec: " << irrBZ.irreducibleBZVectors.at(i)(0) << "," << irrBZ.irreducibleBZVectors.at(i)(1) << "," << irrBZ.irreducibleBZVectors.at(i)(2) << " | Multiplicity: " << irrBZ.multiplicities.at(i) << std::endl;
+        sum += irrBZ.multiplicities.at(i);
+    }
+
+
+    std::cout << sum << std::endl;
+    */
+
+    /*
+    using namespace std::chrono;
+
+    SamplingGrid samplingGrid;
+    samplingGrid.initMonkhorstPack();
+    samplingGrid.initMagnonDisp("Parameters/J_bccFe.txt");
+    samplingGrid.initPhononDisp("Parameters/dynMat_16x16x16.txt", "Parameters/nn5.txt");
+    auto start = high_resolution_clock::now();
+    samplingGrid.init(parameters);
+    auto stop = high_resolution_clock::now();
+
+    auto duration = duration_cast<milliseconds>(stop - start);
+
+    // Output the execution time
+    std::cout << "Function execution took " << duration.count() << " milliseconds" << std::endl;
 
     return 0;
     */
