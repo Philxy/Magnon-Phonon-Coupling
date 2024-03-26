@@ -654,7 +654,7 @@ void IrreducibleBZ::integrate()
 
     double tMax = 0.1;
     double dt = 1E-5;
-    int nMax = int(tMax / dt);
+    int nMax = 10; // int(tMax / dt);
 
     std::ofstream energy_file("Outputs/time_evolut_energies.txt");
 
@@ -664,8 +664,8 @@ void IrreducibleBZ::integrate()
     // Loop over time
     for (int n = 0; n < nMax; n++)
     {
-        // Loop over all vectors in the irreducible BZ
-        // #pragma omp parallel for
+// Loop over all vectors in the irreducible BZ
+#pragma omp parallel for
         for (int vec_outer_idx = 0; vec_outer_idx < irreducibleBZVectors.size(); vec_outer_idx++)
         {
 
@@ -691,11 +691,8 @@ void IrreducibleBZ::integrate()
 
                     // phonon
                     {
-
                         // handle terms with gamma minus and -q
                         {
-                            Eigen::Vector3d G = G_gammaM_minus_q[vec_inner_idx][vec_outer_idx];
-                            Eigen::Vector3d k_prime = G - irreducibleBZVectors.at(vec_inner_idx) + irreducibleBZVectors.at(vec_outer_idx); // G - k - (-q)
                             int rep_index_k_prime = k_prime_representatives_gammaM_minus_q[vec_inner_idx][vec_outer_idx];
                             double N_k_prime = magOccNumbers.at(rep_index_k_prime);
                             double deltaDistr = deltaDistrApprox(phDisp.at(vec_outer_idx).E[branch] - magDisp.at(vec_inner_idx).energy - magDisp.at(rep_index_k_prime).energy);
@@ -704,8 +701,6 @@ void IrreducibleBZ::integrate()
                         }
                         // handle terms with gamma z and -q
                         {
-                            Eigen::Vector3d G = G_gammaZ_minus_q[vec_inner_idx][vec_outer_idx];
-                            Eigen::Vector3d k_prime = G + irreducibleBZVectors.at(vec_inner_idx) + irreducibleBZVectors.at(vec_outer_idx); // G + k - (-q)
                             int rep_index_k_prime = k_prime_representatives_gammaZ_minus_q[vec_inner_idx][vec_outer_idx];
                             double N_k_prime = magOccNumbers.at(rep_index_k_prime);
                             double deltaDistr = deltaDistrApprox(phDisp.at(vec_outer_idx).E[branch] + magDisp.at(vec_inner_idx).energy - magDisp.at(rep_index_k_prime).energy);
@@ -715,8 +710,6 @@ void IrreducibleBZ::integrate()
                         // handle terms with gamma P and +q
                         {
 
-                            Eigen::Vector3d G = G_gammaP_plus_q[vec_inner_idx][vec_outer_idx];
-                            Eigen::Vector3d k_prime = -G - irreducibleBZVectors.at(vec_inner_idx) + irreducibleBZVectors.at(vec_outer_idx); // -G - k + q
                             int rep_index_k_prime = k_prime_representatives_gammaP_plus_q[vec_inner_idx][vec_outer_idx];
                             double N_k_prime = magOccNumbers.at(rep_index_k_prime);
                             double deltaDistr = deltaDistrApprox(-phDisp.at(vec_outer_idx).E[branch] + magDisp.at(vec_inner_idx).energy + magDisp.at(rep_index_k_prime).energy);
@@ -726,8 +719,6 @@ void IrreducibleBZ::integrate()
 
                         // handle terms with gamma Z and +q
                         {
-                            Eigen::Vector3d G = G_gammaZ_plus_q[vec_inner_idx][vec_outer_idx];
-                            Eigen::Vector3d k_prime = G + irreducibleBZVectors.at(vec_inner_idx) - irreducibleBZVectors.at(vec_outer_idx); // G + k - q
                             int rep_index_k_prime = k_prime_representatives_gammaZ_plus_q[vec_inner_idx][vec_outer_idx];
                             double N_k_prime = magOccNumbers.at(rep_index_k_prime);
                             double deltaDistrGammaZ = deltaDistrApprox(-phDisp.at(vec_outer_idx).E[branch] + magDisp.at(vec_inner_idx).energy - magDisp.at(rep_index_k_prime).energy);
@@ -740,8 +731,6 @@ void IrreducibleBZ::integrate()
                     {
                         // positive gammaP term
                         {
-                            Eigen::Vector3d G = G_gammaP_plus_q[vec_outer_idx][vec_inner_idx];
-                            Eigen::Vector3d k_prime = -G - irreducibleBZVectors.at(vec_outer_idx) + irreducibleBZVectors.at(vec_inner_idx); // -G - k + q
                             int rep_index_k_prime = k_prime_representatives_gammaP_plus_q[vec_outer_idx][vec_inner_idx];
                             double N_k_prime = magOccNumbers.at(rep_index_k_prime);
                             double deltaDistr = deltaDistrApprox(magDisp.at(vec_outer_idx).energy + magDisp.at(rep_index_k_prime).energy - phDisp.at(vec_inner_idx).E[branch]);
@@ -749,8 +738,6 @@ void IrreducibleBZ::integrate()
                         }
                         // positive gammaZ term
                         {
-                            Eigen::Vector3d G = G_gammaZ_plus_q[vec_outer_idx][vec_inner_idx];
-                            Eigen::Vector3d k_prime = G + irreducibleBZVectors.at(vec_outer_idx) - irreducibleBZVectors.at(vec_inner_idx); // G + k - q
                             int rep_index_k_prime = k_prime_representatives_gammaZ_plus_q[vec_outer_idx][vec_inner_idx];
                             double N_k_prime = magOccNumbers.at(rep_index_k_prime);
                             double deltaDistr_pmm = deltaDistrApprox(magDisp.at(vec_outer_idx).energy - magDisp.at(rep_index_k_prime).energy - phDisp.at(vec_inner_idx).E[branch]);
@@ -763,8 +750,6 @@ void IrreducibleBZ::integrate()
 
                         // negative gammaM term
                         {
-                            Eigen::Vector3d G = G_gammaM_plus_q[vec_outer_idx][vec_inner_idx];
-                            Eigen::Vector3d k_prime = G - irreducibleBZVectors.at(vec_outer_idx) - irreducibleBZVectors.at(vec_inner_idx); // G - k - q
                             int rep_index_k_prime = k_prime_representatives_gammaM_plus_q[vec_outer_idx][vec_inner_idx];
                             double N_k_prime = magOccNumbers.at(rep_index_k_prime);
                             double n_mqv = phOccNumbers.at(findRepresentative(-irreducibleBZVectors.at(vec_inner_idx)))[branch];
@@ -775,8 +760,6 @@ void IrreducibleBZ::integrate()
 
                         // negative gammaZ term
                         {
-                            Eigen::Vector3d G = G_gammaZ_plus_q[vec_outer_idx][vec_inner_idx];
-                            Eigen::Vector3d k_prime = G + irreducibleBZVectors.at(vec_outer_idx) - irreducibleBZVectors.at(vec_inner_idx); // G + k - q
                             int rep_index_k_prime = k_prime_representatives_gammaZ_plus_q[vec_outer_idx][vec_inner_idx];
                             double N_k_prime = magOccNumbers.at(rep_index_k_prime);
                             double deltaDistr_mpm = deltaDistrApprox(-magDisp.at(vec_outer_idx).energy + magDisp.at(rep_index_k_prime).energy - phDisp.at(vec_inner_idx).E[branch]);
@@ -827,22 +810,25 @@ void IrreducibleBZ::integrate()
         }
 
         // write energy to file
-        energy_file << n * dt << " " << magEnergy << " " << phEnergy << "\n";
+
+        std::cout << n * dt << " " << magEnergy << " " << phEnergy << " " << magEnergy + phEnergy << "\n";
+        energy_file << n * dt << " " << magEnergy << " " << phEnergy << " " << magEnergy + phEnergy << "\n";
     }
 
     energy_file.close();
 }
 
-void IrreducibleBZ::initReciprocalLatticeVec()
+void IrreducibleBZ::init_k_prime()
 {
 
-    G_gammaM_minus_q = std::vector(irreducibleBZVectors.size(), std::vector<Eigen::Vector3d>(irreducibleBZVectors.size()));
-    G_gammaZ_minus_q = std::vector(irreducibleBZVectors.size(), std::vector<Eigen::Vector3d>(irreducibleBZVectors.size()));
-    G_gammaP_minus_q = std::vector(irreducibleBZVectors.size(), std::vector<Eigen::Vector3d>(irreducibleBZVectors.size()));
+    // init all possible rec lattice vectors
+    std::vector<std::vector<Eigen::Vector3d>> G_gammaM_minus_q = std::vector(irreducibleBZVectors.size(), std::vector<Eigen::Vector3d>(irreducibleBZVectors.size()));
+    std::vector<std::vector<Eigen::Vector3d>> G_gammaZ_minus_q = std::vector(irreducibleBZVectors.size(), std::vector<Eigen::Vector3d>(irreducibleBZVectors.size()));
+    std::vector<std::vector<Eigen::Vector3d>> G_gammaP_minus_q = std::vector(irreducibleBZVectors.size(), std::vector<Eigen::Vector3d>(irreducibleBZVectors.size()));
 
-    G_gammaM_plus_q = std::vector(irreducibleBZVectors.size(), std::vector<Eigen::Vector3d>(irreducibleBZVectors.size()));
-    G_gammaZ_plus_q = std::vector(irreducibleBZVectors.size(), std::vector<Eigen::Vector3d>(irreducibleBZVectors.size()));
-    G_gammaP_plus_q = std::vector(irreducibleBZVectors.size(), std::vector<Eigen::Vector3d>(irreducibleBZVectors.size()));
+    std::vector<std::vector<Eigen::Vector3d>> G_gammaM_plus_q = std::vector(irreducibleBZVectors.size(), std::vector<Eigen::Vector3d>(irreducibleBZVectors.size()));
+    std::vector<std::vector<Eigen::Vector3d>> G_gammaZ_plus_q = std::vector(irreducibleBZVectors.size(), std::vector<Eigen::Vector3d>(irreducibleBZVectors.size()));
+    std::vector<std::vector<Eigen::Vector3d>> G_gammaP_plus_q = std::vector(irreducibleBZVectors.size(), std::vector<Eigen::Vector3d>(irreducibleBZVectors.size()));
 
     for (int i = 0; i < irreducibleBZVectors.size(); i++)
     {
@@ -857,12 +843,6 @@ void IrreducibleBZ::initReciprocalLatticeVec()
             G_gammaP_plus_q[i][j] = getG_gammaP(irreducibleBZVectors.at(i), irreducibleBZVectors.at(j));
         }
     }
-
-    std::cout << "Reciprocal lattice vectors successfully initialized" << std::endl;
-}
-
-void IrreducibleBZ::init_k_prime()
-{
 
     std::vector<std::vector<Eigen::Vector3d>> k_prime_gammaZ_minus_q, k_prime_gammaM_minus_q, k_prime_gammaP_minus_q, k_prime_gammaZ_plus_q, k_prime_gammaM_plus_q, k_prime_gammaP_plus_q;
 

@@ -110,7 +110,6 @@ int main()
     //irrBZ.saveCoefficientsAsSqrtAbs("Outputs/coefficients.txt");
     irrBZ.readCoefficients("Outputs/coefficients.txt");
     irrBZ.initOccNumbers();
-    irrBZ.initReciprocalLatticeVec();
     irrBZ.init_k_prime();
     irrBZ.integrate();
 

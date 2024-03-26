@@ -52,10 +52,7 @@ struct IrreducibleBZ
     std::vector<std::vector<std::array<std::complex<double>, 3>>> gammaMinusGrid_negativeSign; // \Gamma^-(k,-q)
     std::vector<std::vector<std::array<std::complex<double>, 3>>> gammaZGrid_negativeSign;     // \Gamma^z(k,-q)
 
-    // precomputed reciprocal lattice vectors
-    std::vector<std::vector<Eigen::Vector3d>> G_gammaZ_minus_q, G_gammaM_minus_q, G_gammaP_minus_q, G_gammaZ_plus_q, G_gammaM_plus_q, G_gammaP_plus_q;
-
-    std::vector<std::vector<int>> k_prime_representatives_gammaZ_minus_q, k_prime_representatives_gammaM_minus_q, k_prime_representatives_gammaP_minus_q, k_prime_representatives_gammaZ_plus_q, k_prime_representatives_gammaM_plus_q, k_prime_representatives_gammaP_plus_q;   
+    std::vector<std::vector<int>> k_prime_representatives_gammaZ_minus_q, k_prime_representatives_gammaM_minus_q, k_prime_representatives_gammaP_minus_q, k_prime_representatives_gammaZ_plus_q, k_prime_representatives_gammaM_plus_q, k_prime_representatives_gammaP_plus_q;
 
     SymmetrieGroup symmetryGroup; // symmetry group
 
@@ -65,7 +62,6 @@ struct IrreducibleBZ
     void initOccNumbers();                                                               // initializes the occupation numbers
     void initCoefficients(const std::vector<CouplingParameter> &parameters, int ftN);    // initializes the coefficients
     void initMultiplicities();
-    void initReciprocalLatticeVec();
     void init_k_prime();
 
     int findRepresentative(const Eigen::Vector3d &kVec); // returns the index of the representative in the irreducibleBZVectors vector
