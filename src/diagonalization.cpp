@@ -1,6 +1,6 @@
 #include "../include/diagonalization.h"
 
-Diagonalization::Diagonalization(const std::vector<CouplingParameter> &couplingParameters, PhononDispParam &phDispParam, const MagnonDispParam &magDispParam, const Vector3D &kVec)
+Diagonalization::Diagonalization(const std::vector<CouplingParameter> &couplingParameters, const PhononDispParam &phDispParam, const MagnonDispParam &magDispParam, const Vector3D &kVec)
     : couplingParameters(couplingParameters), phDisp(phDispParam), magDisp(magDispParam), k(kVec)
 {
     this->C = std::vector<std::complex<double>>(3, std::complex<double>(0, 0));
@@ -12,7 +12,7 @@ void Diagonalization::calcCD()
 {
     DMILikeCouplingParam D_k_values(k.x, k.y, k.z, couplingParameters);
     DMILikeCouplingParam D_k_values_minus(-k.x, -k.y, -k.z, couplingParameters);
-    std::complex<double> i(0, 1);
+    const std::complex<double> i(0, 1);
 
     for (int branch = 0; branch < 3; branch++)
     {
@@ -20,7 +20,9 @@ void Diagonalization::calcCD()
         {
             std::complex<double> D_plus = D_k_values_minus.D[0][axis] + i * D_k_values_minus.D[1][axis];
             std::complex<double> D_minus = D_k_values.D[0][axis] - i * D_k_values.D[1][axis];
+
             double pol_vec_component = phDisp.polVectors[axis][branch];
+
             C.at(branch) += 2.0 * i / sqrt(2 * S) * 3.8636 * D_minus * pol_vec_component * sqrt(1 / (2 * atomicMass * phDisp.E[branch]));
             D.at(branch) += -2.0 * i / sqrt(2 * S) * 3.8636 * D_plus * pol_vec_component * sqrt(1 / (2 * atomicMass * phDisp.E[branch]));
         }

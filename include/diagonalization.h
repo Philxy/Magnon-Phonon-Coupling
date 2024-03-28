@@ -20,7 +20,7 @@ struct Diagonalization
     Eigen::MatrixXcd eigenvectors;
     Eigen::MatrixXcd eigenvectors_inverse;
 
-    Diagonalization(const std::vector<CouplingParameter> &couplingParameters, PhononDispParam &phDispParam, const MagnonDispParam &magDispParam, const Vector3D &kVec);
+    Diagonalization(const std::vector<CouplingParameter> &couplingParameters, const PhononDispParam &phDispParam, const MagnonDispParam &magDispParam, const Vector3D &kVec);
 
     void calcCD();
     void calcMatrixHamiltonian();

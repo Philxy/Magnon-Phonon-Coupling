@@ -52,23 +52,39 @@ b1 = [2 * np.pi / a, 2 * np.pi / a, 0]
 b2 = [0, 2 * np.pi / a, 2 * np.pi / a]
 b3 = [2 * np.pi / a, 0, 2 * np.pi / a]
 
-directory_path = 'scripts/Data/dyn_mat_16x16x16'
+a1 = [1.0 / 2.0, 1.0 / 2.0, 1.0 / 2.0]
+a2 = [-1.0 / 2.0, 1.0 / 2.0, 1.0 / 2.0]
+a3 = [-1.0 / 2.0, -1.0 / 2.0, 1.0 / 2.0]
 
-out_file = open('Parameters/dynMat_16x16x16.txt', 'w')
+
+b_1 = 2*np.pi * np.cross(a2, a3) / np.dot(a1, np.cross(a2, a3))
+b_2 = 2*np.pi * np.cross(a3, a1) / np.dot(a1, np.cross(a2, a3))
+b_3 = 2*np.pi * np.cross(a1, a2) / np.dot(a1, np.cross(a2, a3))
+
+directory_path = 'scripts/Data/dyn_mat_8x8x8'
+
+out_file = open('Parameters/dynMat_8x8x8.txt', 'w')
 
 out_file.write('kx,ky,kz,Dxx,Dxy,Dxz,Dyx,Dyy,Dyz,Dzx,Dzy,Dzz\n')
+
+multiplicity_file = open('Parameters/multiplicity_8x8x8.txt', 'w')
+
 
 for filename in os.listdir(directory_path):
     file_path = os.path.join(directory_path, filename)
     if os.path.isfile(file_path):
         print(f"Processing {filename}...")
         q_vectors_and_matrices = extract_q_vectors_and_matrices(file_path)
+
+        multiplicity = len(q_vectors_and_matrices)
+        multiplicity_file.write(f"{filename},{multiplicity}\n")
+
         for q_vector, matrix in q_vectors_and_matrices:
 
             #u, v, w = q_vector
-            #q_vector[0] = u * b1[0] + v * b2[0] + w * b3[0]
-            #q_vector[1] = u * b1[1] + v * b2[1] + w * b3[1]
-            #q_vector[2] = u * b1[2] + v * b2[2] + w * b3[2]
+            #q_vector[0] = u * b_1[0] + v * b_2[0] + w * b_3[0]
+            #q_vector[1] = u * b_1[1] + v * b_2[1] + w * b_3[1]
+            #q_vector[2] = u * b_1[2] + v * b_2[2] + w * b_3[2]
 
             q_vector[0] *= 2*np.pi
             q_vector[1] *= 2*np.pi
@@ -78,7 +94,6 @@ for filename in os.listdir(directory_path):
 
 
 exit()
-
 
 # Replace 'file_path' with the actual path to your file
 file_path = 'scripts/Data/bccfe.dyn1'

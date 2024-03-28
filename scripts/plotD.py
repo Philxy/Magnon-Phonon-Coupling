@@ -106,7 +106,6 @@ x = np.linspace(0, 1, len(datak))
 xx = [d[0].imag for d in dataD]
 xy = [d[1].imag for d in dataD]
 xz = [d[2].imag for d in dataD]
-
 yx = [d[3].imag for d in dataD]
 yy = [d[4].imag for d in dataD]
 yz = [d[5].imag for d in dataD]
@@ -160,7 +159,6 @@ plt.style.use("seaborn-v0_8-bright")
 #plt.plot(x, [Dx-Dy for Dx, Dy in zip(xz,yz)])
 #plt.show()
 
-
 paths_xx = split_into_n_parts(xx,6)
 paths_xy = split_into_n_parts(xy,6)
 paths_xz = split_into_n_parts(xz,6)
@@ -175,7 +173,7 @@ paths = np.linspace(0,1,len(paths_xx[0]))
 
 fig, axs = plt.subplots(ncols=6,nrows=2,figsize=(16/2.25,10/2.52))
 
-plt.subplots_adjust(wspace=0.05, hspace=0.06)
+plt.subplots_adjust(wspace=0.06, hspace=0.15)
 
 lw=2.5
 
@@ -225,8 +223,17 @@ axs[1][5].set_xticks([0,1], ['$P$', '$N$'])
 axs[0][0].set_yticks([0,5])
 axs[1][0].set_yticks([-5,0])
 
-axs[0][0].set_ylabel(r'$\mathrm{Im}\mathcal{D}^{x\mu}_\mathbf{k}$')
-axs[1][0].set_ylabel(r'$\mathrm{Im}\mathcal{D}^{y\mu}_\mathbf{k}$')
+
+
+
+# for the real part
+# axs[0][0].set_yticks([-2E-6,0, 2E-6])
+#axs[1][0].set_yticks([-2E-6,0, 2E-6])
+#axs[0][0].set_ylim([-4E-6,5E-6])
+#axs[1][0].set_ylim([-4E-6,5E-6])
+
+axs[0][0].set_ylabel(r'$\mathrm{Re}\mathcal{D}^{x\mu}_\mathbf{k}$')
+axs[1][0].set_ylabel(r'$\mathrm{Re}\mathcal{D}^{y\mu}_\mathbf{k}$')
 
 
 axs[0][5].legend(title=r'$\mu$')

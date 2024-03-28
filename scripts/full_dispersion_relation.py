@@ -109,11 +109,14 @@ def main():
     # open relevant files:
 
     # magnon dispersion relation
-    file_magnon = 'scripts/Data/bccFe_disp_rel/numbersJIso.txt'
+    #file_magnon = 'scripts/Data/bccFe_disp_rel/numbersJIso.txt'
+    file_magnon = 'Outputs/numbersJIso_test.txt'
     # phonon dispersion relation
-    file_phonon = 'scripts/Data/bccFe_disp_rel/numbersPh.txt'
+    #file_phonon = 'scripts/Data/bccFe_disp_rel/numbersPh.txt'
+    file_phonon = 'Outputs/numbersPhTest.txt'
     # DMI-like coupling parameters
-    file_DMIlike = 'scripts/Data/bccFe_disp_rel/numbersD.txt'
+    #file_phonon = 'scripts/Data/bccFe_disp_rel/numbersPh.txt'
+    file_DMIlike = 'Outputs/numbersDTest.txt'
 
 
     #file_DMIlike = "Outputs/numbersD.txt"
@@ -217,8 +220,8 @@ def main():
                 D_mk_plus_mu = DMI_like_coupl_neg_k[idx][0][axis] + imaginary_unit * DMI_like_coupl_neg_k[idx][1][axis]
                 D_k_minus_mu = DMI_like_coupl[idx][0][axis] - imaginary_unit * DMI_like_coupl[idx][1][axis]
 
-                C_coeff +=  2*imaginary_unit/np.sqrt(2*S) * (pol_vec[idx][axis][branch]) * 3.8636 * np.sqrt(1.0 / (2 * atomic_mass * ph_energy[idx][branch])) * D_k_minus_mu
-                D_coeff += -2*imaginary_unit/np.sqrt(2*S) * (pol_vec[idx][axis][branch]) * 3.8636 * np.sqrt(1.0 / (2 * atomic_mass * ph_energy[idx][branch])) * D_mk_plus_mu
+                C_coeff +=  2*imaginary_unit/np.sqrt(2*S) * (pol_vec[idx][axis][branch]) * 3.8636 * np.sqrt(1.0 / (2 * atomicMass * ph_energy[idx][branch])) * D_k_minus_mu
+                D_coeff += -2*imaginary_unit/np.sqrt(2*S) * (pol_vec[idx][axis][branch]) * 3.8636 * np.sqrt(1.0 / (2 * atomicMass * ph_energy[idx][branch])) * D_mk_plus_mu
 
                 D_minus_mu_coeff[axis] = D_k_minus_mu
 
@@ -242,14 +245,33 @@ def main():
     from matplotlib.colors import Normalize
     import matplotlib.colors as mcolors
 
-    for branch in range(0, 3):
+    for idx in range(len(x_values)):
+        branch = 2
+        #print(C_coefficients[idx][branch], D_coefficients[idx][branch], (C_coefficients[idx][branch]*D_coefficients[idx][branch]))
+
+        realteilC = C_coefficients[idx][branch].real
+        realteilD = D_coefficients[idx][branch].real
+
+        imagteilC = C_coefficients[idx][branch].imag
+        imagteilD = D_coefficients[idx][branch].imag
+        
+        
+
+    for branch in range(2, 3):
         wp = [wP(A_coefficients[idx][branch], B_coefficients[idx], C_coefficients[idx]
                  [branch], D_coefficients[idx][branch]).real for idx in range(len(x_values))]
         wm = [wM(A_coefficients[idx][branch], B_coefficients[idx], C_coefficients[idx]
                  [branch], D_coefficients[idx][branch]).real for idx in range(len(x_values))]
 
-        axs[0].scatter(x_values, [(C_coefficients[idx][branch]*D_coefficients[idx][branch]).real for idx in range(len(x_values))], s=.5, label=str(branch+1))
+
+        #axs[0].scatter(x_values, [(D_coefficients[idx][branch]).real for idx in range(len(x_values))], s=.5, label=str(branch+1)+ "D")
+        axs[0].plot(x_values, [(C_coefficients[idx][branch]*D_coefficients[idx][branch]).real for idx in range(len(x_values))], label=str(branch+1)+ "CD real")
+        axs[0].plot(x_values, [(C_coefficients[idx][branch]*D_coefficients[idx][branch]).imag for idx in range(len(x_values))], label=str(branch+1)+ "CD imag")
+        #axs[0].scatter(x_values, [(C_coefficients[idx][branch]).imag for idx in range(len(x_values))], s=.5, label=str(branch+1)+ "C imag")
+        #axs[0].scatter(x_values, [(C_coefficients[idx][branch]).real for idx in range(len(x_values))], s=.5, label=str(branch+1) + "C")
         
+
+
         # multiply the C and D coefficients: as they are complex conjugates, the product should be positive and real
         #axs[1].scatter(x_values, [(D_coefficients[idx][branch]*C_coefficients[idx][branch]).imag for idx in range(len(x_values))], s=.5, label='imag')
         #axs[1].scatter(x_values, [(D_coefficients[idx][branch]*C_coefficients[idx][branch]).real for idx in range(len(x_values))], s=.5, label='real')

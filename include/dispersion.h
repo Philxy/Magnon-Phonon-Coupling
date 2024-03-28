@@ -31,3 +31,9 @@ std::vector<MagnonDispParam> getMagneticDispersion(std::string couplingParameter
 
 std::vector<PhononDispParam> getPhononDispersion(std::string dynamicMatricesFile, std::string nextNeighbourFile, std::string phononDispOutputPath, std::vector<Vector3D> path);
 std::vector<PhononDispParam> getPhononDispersion(std::string dynamicMatricesFile, std::string nextNeighbourFile, std::vector<Vector3D> path);
+
+
+std::vector<PhononDispParam> readPhononDispParams(const std::string &filePath);
+std::vector<MagnonDispParam> getMagnonDispFromPhononDisp(const std::vector<PhononDispParam> &phDisp, std::string couplingParameterFile, std::string magnonDispOutputPath);
+
+bool checkZeroEnergy(const PhononDispParam &phononDispersion, const Vector3D &kVec);

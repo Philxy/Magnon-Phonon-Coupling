@@ -1,4 +1,5 @@
 #include <complex>
+#include <sstream>
 // #include <fftw3.h>
 #include "../include/couplingParameters.h"
 #include "../include/fourierTransform.h"
@@ -14,13 +15,7 @@
 int main()
 {
 
-    std::vector<Vector3D> path = constructPath(1000, 1);
-
-    // Calculates phonon dispersion relation
-    std::vector<PhononDispParam> phononDispersion = getPhononDispersion("Parameters/dynMat_20x20x20.txt", "Parameters/nn6.txt", "Outputs/numbersPh_20x20x20.txt", path);
-
-    // Calculate magnon dispersion relation
-    std::vector<MagnonDispParam> magnonDispersion = getMagneticDispersion("Parameters/J_bccFe.txt", "Outputs/numbersJIso_20x20.txt", path);
+    // Read the magnon-phonon coupling parameters from the files
 
     std::vector<CouplingParameter> parameters;  // contains all the parameters
     std::vector<CouplingParameter> parametersX; // contains all the parameters with x displacement
@@ -45,75 +40,124 @@ int main()
     parameters.insert(parameters.end(), ij_uk_z_parameter.begin(), ij_uk_z_parameter.end());
 
     /*
-    // Diagonalisation
-    std::ofstream outFileEV("Outputs/8x8Eigenenergies_20x20.txt");
-    std::ofstream outFileCD("Outputs/8x8CD_20x20.txt");
-    std::ofstream outFileEVectors("Outputs/8x8EVec_20x20.txt");
+        // DIAGONALIZATION
 
-    for (int idx = 0; idx < path.size(); idx++)
-    {
-        std::cout << "Progress: " << idx / double(path.size()) << "\n";
+        std::vector<PhononDispParam> phononDispersion = readPhononDispParams("scripts/Data/QE_Pol_Disp/formatted_4x4x4_path_G_H.txt");
+        std::vector<MagnonDispParam> magnonDispersion = getMagnonDispFromPhononDisp(phononDispersion, "Parameters/J_bccFe.txt", "Outputs/numbersJIso_20x20.txt");
 
-        Diagonalization diag(parameters, phononDispersion.at(idx), magnonDispersion.at(idx), path.at(idx));
-        diag.calcCD();
-        diag.calcMatrixHamiltonian();
-        diag.diagonalize();
+        // Pre-allocate space for output data, initializing with empty strings or appropriate default values
+        std::vector<std::string> outEV(phononDispersion.size());
+        std::vector<std::string> outCD(phononDispersion.size());
+        std::vector<std::string> outEVectors(phononDispersion.size());
 
-        outFileEV << diag.k.x << "," << diag.k.y << "," << diag.k.z << ",";
-        outFileCD << diag.k.x << "," << diag.k.y << "," << diag.k.z << ",";
-        outFileEVectors << diag.k.x << "," << diag.k.y << "," << diag.k.z << ",";
-
-        for (int i = 0; i < 7; i++)
+    #pragma omp parallel for
+        for (int idx = 0; idx < phononDispersion.size(); idx++)
         {
-            outFileEV << diag.eigenEnergies.at(i) << ",";
-        }
-        outFileEV << diag.eigenEnergies.at(7) << "\n";
+            Vector3D kVec(phononDispersion.at(idx).kx, phononDispersion.at(idx).ky, phononDispersion.at(idx).kz);
 
-        outFileCD << diag.C.at(0) << "," << diag.C.at(1) << "," << diag.C.at(2) << "," << diag.D.at(0) << "," << diag.D.at(1) << "," << diag.D.at(2) << "\n";
-
-        for (int col = 0; col < 8; col++)
-        {
-            for (int row = 0; row < 8; row++)
+            // do not diagonalize if the phonon energy is zero
+            if (checkZeroEnergy(phononDispersion.at(idx), kVec))
             {
-                outFileEVectors << diag.eigenvectors_inverse.col(col).row(row).x();
-                if (row == 7 && col == 7)
+                continue;
+            }
+
+            Diagonalization diag(parameters, phononDispersion.at(idx), magnonDispersion.at(idx), kVec);
+
+            diag.calcCD();
+            diag.calcMatrixHamiltonian();
+            diag.diagonalize();
+
+            // Some debug output
+            //std::cout << "k: \n";
+            //std::cout << phononDispersion.at(idx).kx << " " << phononDispersion.at(idx).ky << " " << phononDispersion.at(idx).kz << std::endl;
+            //std::cout << "Phonon energies: \n";
+            //std::cout << phononDispersion.at(idx).E[0] << " " << phononDispersion.at(idx).E[1] << " " << phononDispersion.at(idx).E[2] << std::endl;
+            //std::cout << "Pol vectors: \n";
+            //std::cout << phononDispersion.at(idx).polVectors[0][0] << " " << phononDispersion.at(idx).polVectors[0][1] << " " << phononDispersion.at(idx).polVectors[0][2] << std::endl;
+            //std::cout << phononDispersion.at(idx).polVectors[1][0] << " " << phononDispersion.at(idx).polVectors[1][1] << " " << phononDispersion.at(idx).polVectors[1][2] << std::endl;
+            //std::cout << phononDispersion.at(idx).polVectors[2][0] << " " << phononDispersion.at(idx).polVectors[2][1] << " " << phononDispersion.at(idx).polVectors[2][2] << std::endl;
+            //std::cout << "C vector: \n";
+            //std::cout << diag.C.at(0) << " " << diag.C.at(1) << " " << diag.C.at(2) << std::endl;
+            //std::cout << "D vector: \n";
+            //std::cout << diag.D.at(0) << " " << diag.D.at(1) << " " << diag.D.at(2) << std::endl;
+
+            outFileEV << diag.k.x << "," << diag.k.y << "," << diag.k.z << ",";
+            outFileCD << diag.k.x << "," << diag.k.y << "," << diag.k.z << ",";
+            outFileEVectors << diag.k.x << "," << diag.k.y << "," << diag.k.z << ",";
+
+            // Construct the strings for each output based on the computation
+            std::ostringstream evStream, cdStream, eVecStream;
+
+            for (int i = 0; i < 7; i++)
+            {
+                evStream << diag.eigenEnergies.at(i) << ",";
+            }
+            evStream << diag.eigenEnergies.at(7);
+
+            cdStream << diag.C.at(0) << "," << diag.C.at(1) << "," << diag.C.at(2) << ","
+                     << diag.D.at(0) << "," << diag.D.at(1) << "," << diag.D.at(2);
+
+            for (int col = 0; col < 8; col++)
+            {
+                for (int row = 0; row < 8; row++)
                 {
-                    outFileEVectors << "\n";
-                }
-                else
-                {
-                    outFileEVectors << ",";
+                    eVecStream << diag.eigenvectors_inverse.col(col).row(row).x();
+                    if (row < 7 || col < 7)
+                    {
+                        eVecStream << ",";
+                    }
                 }
             }
-        }
-    }
-    outFileEVectors.close();
-    outFileEV.close();
-    outFileCD.close();
 
-    return 0;
+            // Assign the constructed strings to the corresponding vectors
+            outEV[idx] = evStream.str();
+            outCD[idx] = cdStream.str();
+            outEVectors[idx] = eVecStream.str();
+        }
+        std::ofstream outFileEV("Outputs/4x4x4Eigenenergies.txt");
+        std::ofstream outFileCD("Outputs/4x4x4CD.txt");
+        std::ofstream outFileEVectors("Outputs/4x4x4EVec.txt");
+
+        for (const auto &line : outEV)
+        {
+            outFileEV << line << "\n";
+        }
+        for (const auto &line : outCD)
+        {
+            outFileCD << line << "\n";
+        }
+        for (const auto &line : outEVectors)
+        {
+            outFileEVectors << line << "\n";
+        }
+
+        outFileEVectors.close();
+        outFileEV.close();
+        outFileCD.close();
+
+        return 0;
     */
 
     // init symmetry group
     SymmetrieGroup symGroups;
-    symGroups.init("Parameters/symmNew.txt");
+    symGroups.init("Parameters/symmetryMatricesAll.txt");
     // init irreducible BZ
     IrreducibleBZ irrBZ;
     irrBZ.symmetryGroup = symGroups;
-    irrBZ.init("Parameters/irrPoints_8x8x8_mod.txt");
+    irrBZ.init("Parameters/8x8x8/irrPoints.txt");
     // init magnon and phonon dispersion
-    irrBZ.initMagnonDisp("Parameters/J_bccFe.txt");
-    irrBZ.initPhononDisp("Parameters/dynMat_8x8x8.txt", "Parameters/nn3.txt");
+    irrBZ.initMagnonPhononDispFromFile("Parameters/8x8x8/ph_data.txt", "Parameters/J_bccFe.txt", "Parameters/8x8x8/magDisp.txt");
+    irrBZ.readMultiplicities("Parameters/8x8x8/multiplicity.txt");
 
     // init coefficients
-    //irrBZ.initCoefficients(parameters, nFT);
-    //irrBZ.saveCoefficientsAsSqrtAbs("Outputs/coefficients.txt");
+    irrBZ.initCoefficients(parameters, nFT);
+    irrBZ.saveCoefficientsAsSqrtAbs("Outputs/coefficients.txt");
     irrBZ.readCoefficients("Outputs/coefficients.txt");
     irrBZ.initOccNumbers();
     irrBZ.init_k_prime();
     irrBZ.integrate();
 
-    return 1;
+    return 0;
 
     // Check if the irr points are their own representative
     // for (int i = 0; i < irrBZ.irreducibleBZVectors.size(); i++)

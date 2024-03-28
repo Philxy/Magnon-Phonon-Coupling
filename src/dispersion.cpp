@@ -117,7 +117,6 @@ std::vector<PhononDispParam> getPhononDispersion(std::string dynamicMatricesFile
 
         for (int row = 0; row < 3; row++)
         {
-
             for (int col = 0; col < 3; col++)
             {
                 phDispParam.polVectors[row][col] = eigenvectors.row(row).col(col).x().real();
@@ -205,4 +204,101 @@ std::vector<PhononDispParam> getPhononDispersion(std::string dynamicMatricesFile
     }
 
     return phononDisp;
+}
+
+// Read phonon dispersion parameters from a file
+// Assumptions:
+// - k vector given in units of 1/a
+// - Energies given in meV
+std::vector<PhononDispParam> readPhononDispParams(const std::string &filePath)
+{
+    std::vector<PhononDispParam> params;
+    std::ifstream file(filePath);
+
+    if (!file.is_open())
+    {
+        std::cerr << "Failed to open file: " << filePath << std::endl;
+        return params; // Return an empty vector if the file couldn't be opened
+    }
+
+    std::string line;
+
+    std::getline(file, line); // skip the first line
+
+    while (std::getline(file, line))
+    {
+        std::istringstream iss(line);
+        PhononDispParam param;
+        // Read kx, ky, kz
+        iss >> param.kx >> param.ky >> param.kz;
+        // Read energies
+        for (int i = 0; i < 3; ++i)
+        {
+            iss >> param.E[i];
+        }
+        // Read polarization vectors
+        for (int i = 0; i < 3; ++i)
+        {
+            for (int j = 0; j < 3; ++j)
+            {
+                iss >> param.polVectors[j][i]; // Notice the indexing: [j][i] to correctly fill the columns
+            }
+        }
+
+        //param.E[0] *= 10;
+        //param.E[1] *= 10;
+        //param.E[2] *= 10; 
+
+        params.push_back(param);
+    }
+
+    file.close();
+    return params;
+}
+
+// Given a phonon dispersion, calculate the magnetic dispersion
+// using the provided isotropic Heisenberg exchange parameters
+// and the k vectors from the phonon dispersion
+std::vector<MagnonDispParam> getMagnonDispFromPhononDisp(const std::vector<PhononDispParam> &phDisp, std::string couplingParameterFile, std::string magnonDispOutputPath)
+{
+    std::vector<MagnonDispParam> magnonDisp;
+
+    std::ofstream outFileIso(magnonDispOutputPath);
+    outFileIso << "kx,ky,kz,J\n";
+
+    // units: The isotropic Heisenberg exchange parameters are assumed to be in mRy and they are converted to meV
+    const double conversionFactor = 13.606;
+    const double d_aniso = 6.97 * 1E-3;
+    std::vector<CouplingParameter> parameters_J_iso = readCouplingParametersIso(couplingParameterFile);
+
+    for (const PhononDispParam &ph : phDisp)
+    {
+        MagnonDispParam mag;
+        mag.kx = ph.kx;
+        mag.ky = ph.ky;
+        mag.kz = ph.kz;
+
+        std::complex<double> Jk = 1.0 / S * (FTJiso(ph.kx, ph.ky, ph.kz, parameters_J_iso).real() * conversionFactor + d_aniso);
+        outFileIso << ph.kx << "," << ph.ky << "," << ph.kz << "," << Jk << "\n";
+
+        mag.energy = Jk.real();
+        magnonDisp.push_back(mag);
+    }
+
+    outFileIso.close();
+
+    return magnonDisp;
+}
+
+bool checkZeroEnergy(const PhononDispParam &phononDispersion, const Vector3D &kVec)
+{
+    for (int i = 0; i < 3; i++)
+    {
+        if (std::abs(phononDispersion.E[i]) < std::numeric_limits<double>::epsilon())
+        {
+            std::cout << "Zero energy found at k: " << kVec.x << " " << kVec.y << " " << kVec.z << std::endl;
+            return true;
+        }
+    }
+    return false;
 }

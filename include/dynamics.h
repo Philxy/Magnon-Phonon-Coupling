@@ -43,7 +43,14 @@ struct IrreducibleBZ
     std::vector<double> magOccNumbers;               // magnon occupation numbers
     std::vector<std::array<double, 3>> phOccNumbers; // phonon occupation numbers
 
-    // coefficients
+    // COEFFICIENTS
+
+    // first order in mag variables
+    std::vector<std::array<std::complex<double>, 3>> CGrid;               
+    std::vector<std::array<std::complex<double>, 3>> DGrid;               
+    std::vector<std::array<std::complex<double>, 3>> CGrid_negative_sign; 
+    std::vector<std::array<std::complex<double>, 3>> DGrid_negative_sign;  
+    // second order in mag variables
     std::vector<std::vector<std::array<std::complex<double>, 3>>> gammaPlusGrid;  // \Gamma^+(k,q)
     std::vector<std::vector<std::array<std::complex<double>, 3>>> gammaMinusGrid; // \Gamma^-(k,q)
     std::vector<std::vector<std::array<std::complex<double>, 3>>> gammaZGrid;     // \Gamma^z(k,q)
@@ -52,6 +59,7 @@ struct IrreducibleBZ
     std::vector<std::vector<std::array<std::complex<double>, 3>>> gammaMinusGrid_negativeSign; // \Gamma^-(k,-q)
     std::vector<std::vector<std::array<std::complex<double>, 3>>> gammaZGrid_negativeSign;     // \Gamma^z(k,-q)
 
+    // precomputed representatives satisfying pseudo conservation laws
     std::vector<std::vector<int>> k_prime_representatives_gammaZ_minus_q, k_prime_representatives_gammaM_minus_q, k_prime_representatives_gammaP_minus_q, k_prime_representatives_gammaZ_plus_q, k_prime_representatives_gammaM_plus_q, k_prime_representatives_gammaP_plus_q;
 
     SymmetrieGroup symmetryGroup; // symmetry group
@@ -59,9 +67,14 @@ struct IrreducibleBZ
     void init(std::string irreducibleBZFile);                                            // initializes the irreducible BZ vectors
     void initMagnonDisp(std::string couplingParameterFile);                              // initializes the magnon dispersion
     void initPhononDisp(std::string dynamicMatricesFile, std::string nextNeighbourFile); // initializes the phonon dispersion
+    void initMagnonPhononDispFromFile(std::string filepathPh, std::string filepathMag); // initializes the phonon and magnon dispersion from file
+
+    void initMagnonPhononDispFromFile(std::string filepathPh, std::string filepathMag, std::string magnonDispOutputPath); 
+
+
     void initOccNumbers();                                                               // initializes the occupation numbers
     void initCoefficients(const std::vector<CouplingParameter> &parameters, int ftN);    // initializes the coefficients
-    void initMultiplicities();
+    void readMultiplicities(const std::string &filename);
     void init_k_prime();
 
     int findRepresentative(const Eigen::Vector3d &kVec); // returns the index of the representative in the irreducibleBZVectors vector
