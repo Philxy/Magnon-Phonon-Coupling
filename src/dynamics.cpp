@@ -64,11 +64,38 @@ std::vector<Eigen::Vector3d> SymmetrieGroup::applySymmetries(const Eigen::Vector
 int IrreducibleBZ::findRepresentative(const Eigen::Vector3d &kVec)
 {
     const double dist_threshold = 0.001;
-    const int m = 1;
+    const int m = 3;
 
     double curr_min_dist = 1E7;
     int curr_min_idx = -1;
-    Eigen::Vector3d curr_transformed_kVec;
+
+    for (auto transformedVec : applySymmOp(kVec))
+    {
+        for (int i = -m; i <= m; i++)
+        {
+            for (int j = -m; j <= m; j++)
+            {
+                for (int k = -m; k <= m; k++)
+                {
+                    Eigen::Vector3d shifted_transformed_kVec = transformedVec + i * Eigen::Vector3d(2 * pi, 0, 0) + j * Eigen::Vector3d(0, 2 * pi, 0) + k * Eigen::Vector3d(0, 0, 2 * pi);
+
+                    for (int n = 0; n < irreducibleBZVectors.size(); n++)
+                    {
+                        double dist = distance(irreducibleBZVectors.at(n), shifted_transformed_kVec);
+                        if (dist < dist_threshold)
+                        {
+                            return n;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    std::cout << "Could not find rep in the IBZ for: " << kVec(0) / (2 * pi) << "," << kVec(1) / (2 * pi) << "," << kVec(2) / (2 * pi) << std::endl;
+
+    return -1;
+
+    /*
 
     // try mapping to first BZ
     for (int i = -m; i <= m; i++)
@@ -83,21 +110,6 @@ int IrreducibleBZ::findRepresentative(const Eigen::Vector3d &kVec)
                 for (Eigen::Vector3d transformed_shifted_kVec : symmetryGroup.applySymmetries(shifted_kVec))
                 {
 
-                    /*
-                    // find the closest vector in the irreducible BZ
-                    int closest_idx = findClosestVectorIndex(transformed_shifted_kVec);
-
-                    double dist = distance(irreducibleBZVectors.at(closest_idx), transformed_shifted_kVec);
-
-                    // std::cout << "dist: " << dist << " | curr_min_dist: " << curr_min_dist << " closest_idx: " << closest_idx << " curr_min: " << curr_min_idx << std::endl;
-
-                    if (dist < curr_min_dist)
-                    {
-                        curr_min_dist = dist;
-                        curr_min_idx = closest_idx;
-                        curr_transformed_kVec = transformed_shifted_kVec;
-                    }
-                    */
 
                     for (int n = 0; n < irreducibleBZVectors.size(); n++)
                     {
@@ -108,17 +120,20 @@ int IrreducibleBZ::findRepresentative(const Eigen::Vector3d &kVec)
                             // std::cout << "dist: " << dist << std::endl;
                             return n;
                         }
-                        if (dist < curr_min_dist)
-                        {
-                            curr_min_dist = dist;
-                            curr_min_idx = n;
-                            curr_transformed_kVec = transformed_shifted_kVec;
-                        }
+                        // if (dist < curr_min_dist)
+                        //{
+                        //     curr_min_dist = dist;
+                        //     curr_min_idx = n;
+                        //     curr_transformed_kVec = transformed_shifted_kVec;
+                        // }
                     }
                 }
             }
         }
     }
+
+
+    */
 
     // if (curr_min_dist > dist_threshold)
     //{
@@ -136,7 +151,9 @@ int IrreducibleBZ::findRepresentative(const Eigen::Vector3d &kVec)
     // std::cout << "v = " << kVec(0) / (2 * pi) << "," << kVec(1) / (2 * pi) << "," << kVec(2) / (2 * pi) << std::endl;
     // std::cout << "r = " << irreducibleBZVectors.at(curr_min_idx)(0) / (2 * pi) << "," << irreducibleBZVectors.at(curr_min_idx)(1) / (2 * pi) << "," << irreducibleBZVectors.at(curr_min_idx)(2) / (2 * pi) << std::endl;
 
-    return curr_min_idx;
+    std::cout << "Could not find rep in the IBZ for: " << kVec(0) / (2 * pi) << "," << kVec(1) / (2 * pi) << "," << kVec(2) / (2 * pi) << std::endl;
+    return -1;
+    // return curr_min_idx;
 
     // std::cout << "k = " << kVec(0) << "," << kVec(1) << "," << kVec(2) << ","
     //           << "Error: Could not find representative in the irreducible BZ" << std::endl;
@@ -351,6 +368,7 @@ void IrreducibleBZ::initMagnonPhononDispFromFile(std::string filepathPh, std::st
 
     this->phDisp = phData;
     this->magDisp = magData;
+    std::cout << "Successfully initialized magnon and phonon data from file" << std::endl;
 }
 
 void IrreducibleBZ::initCoefficients(const std::vector<CouplingParameter> &parameters, int ftN)
@@ -399,7 +417,6 @@ void IrreducibleBZ::initCoefficients(const std::vector<CouplingParameter> &param
 
             for (Axis ax : std::vector<Axis>{X, Y, Z})
             {
-
                 std::complex<double> D_plus = D_k_values_minus.D[0][ax] + i * D_k_values_minus.D[1][ax];
                 std::complex<double> D_minus = D_k_values.D[0][ax] - i * D_k_values.D[1][ax];
 
@@ -483,6 +500,13 @@ void IrreducibleBZ::initCoefficients(const std::vector<CouplingParameter> &param
                     gammaPlus[branch] += 3.8636 * sqrt(ftN) / (2.0 * S) * (gammaPJxxmu - gammaPJyymu + i * gammaPJxymu + i * gammaPJyxmu) * sqrt(1 / (2 * atomicMass * phDisp.at(j).E[branch])) * phDisp.at(j).polVectors[ax][branch];
                     gammaZ[branch] += 3.8636 * sqrt(ftN) / (2.0 * S) * (2.0 * Jxxmu + 2.0 * Jyymu - 4.0 * Jzzmu + 2.0 * i * Jyxmu - 2.0 * i * Jxymu) * sqrt(1 / (2 * atomicMass * phDisp.at(j).E[branch])) * phDisp.at(j).polVectors[ax][branch];
 
+                    // debug statement
+                    // if (gammaZ[branch].real() > 1E4 || gammaZ[branch].imag() > 1E4)
+                    //{
+                    //    std::cout << gammaZ[branch] << std::endl;
+                    //    std::cout << "Jxxmu: " << Jxxmu << " Jyymu " << Jyymu << "Jyxmu " << Jyxmu << "Jxymu " << Jxymu << "Jzzmu " << Jzzmu << std::endl;
+                    //}
+
                     // neg sign of q
                     gammaMinus_negativeSign[branch] += 3.8636 * sqrt(ftN) / (2.0 * S) * (gammaMJxxmu_negativeSign - gammaMJyymu_negativeSign - i * gammaMJxymu_negativeSign - i * gammaMJyxmu_negativeSign) * sqrt(1 / (2 * atomicMass * phDisp.at(j).E[branch])) * phDisp.at(j).polVectors[ax][branch];
                     gammaPlus_negativeSign[branch] += 3.8636 * sqrt(ftN) / (2.0 * S) * (gammaPJxxmu_negativeSign - gammaPJyymu_negativeSign + i * gammaPJxymu_negativeSign + i * gammaPJyxmu_negativeSign) * sqrt(1 / (2 * atomicMass * phDisp.at(j).E[branch])) * phDisp.at(j).polVectors[ax][branch];
@@ -508,16 +532,11 @@ void IrreducibleBZ::initCoefficients(const std::vector<CouplingParameter> &param
 // Apply the symmetries to the k' vector and possibly also the k and q vectors???
 Eigen::Vector3d IrreducibleBZ::getG_Z(const Eigen::Vector3d &kVec, const Eigen::Vector3d &qVec)
 {
-
-    int m = 1;
-
-    // std::cout << "k: " << kvec(0) / (2 * pi) << " " << kvec(1) / (2 * pi) << " " << kvec(2) / (2 * pi) << " | q: " << qvec(0) / (2 * pi) << " " << qvec(1) / (2 * pi) << " " << qvec(2) / (2 * pi) << std::endl;
-
-    // std::cout << "getG function called__________________" << std::endl;
+    int m = 3;
 
     for (auto k_prime : irreducibleBZVectors)
     {
-        for (auto k_p_trans : symmetryGroup.applySymmetries(k_prime))
+        for (auto k_p_trans : applySymmOp(k_prime))
         {
             for (int i = -m; i <= m; i++)
             {
@@ -526,7 +545,7 @@ Eigen::Vector3d IrreducibleBZ::getG_Z(const Eigen::Vector3d &kVec, const Eigen::
                     for (int k = -m; k <= m; k++)
                     {
                         Eigen::Vector3d G = i * Eigen::Vector3d(2 * pi, 0, 0) + j * Eigen::Vector3d(0, 2 * pi, 0) + k * Eigen::Vector3d(0, 0, 2 * pi);
-                        if (distance(G, k_p_trans - kVec + qVec) < 0.01)
+                        if (distance(G, k_p_trans - kVec + qVec) < 0.0001)
                         {
                             // std::cout << "G " << G(0) / (2 * pi) << " " << G(1) / (2 * pi) << " " << G(2) / (2 * pi) << " | k_prime: " << k_prime(0) / (2 * pi) << " " << k_prime(1) / (2 * pi) << " " << k_prime(2) / (2 * pi) << std::endl;
 
@@ -538,7 +557,7 @@ Eigen::Vector3d IrreducibleBZ::getG_Z(const Eigen::Vector3d &kVec, const Eigen::
         }
     }
 
-    // std::cout << "Error: Could not find GZ" << std::endl;
+    std::cout << "Error: Could not find GZ" << std::endl;
     return Eigen::Vector3d(0, 0, 0);
 }
 
@@ -546,16 +565,11 @@ Eigen::Vector3d IrreducibleBZ::getG_Z(const Eigen::Vector3d &kVec, const Eigen::
 // Apply the symmetries to the k' vector and possibly also the k and q vectors???
 Eigen::Vector3d IrreducibleBZ::getG_gammaP(const Eigen::Vector3d &kVec, const Eigen::Vector3d &qVec)
 {
-
-    int m = 1;
-
-    // std::cout << "k: " << kvec(0) / (2 * pi) << " " << kvec(1) / (2 * pi) << " " << kvec(2) / (2 * pi) << " | q: " << qvec(0) / (2 * pi) << " " << qvec(1) / (2 * pi) << " " << qvec(2) / (2 * pi) << std::endl;
-
-    // std::cout << "getG function called__________________" << std::endl;
+    int m = 3;
 
     for (auto k_prime : irreducibleBZVectors)
     {
-        for (auto k_p_trans : symmetryGroup.applySymmetries(k_prime))
+        for (auto k_p_trans : applySymmOp(k_prime))
         {
             for (int i = -m; i <= m; i++)
             {
@@ -576,7 +590,7 @@ Eigen::Vector3d IrreducibleBZ::getG_gammaP(const Eigen::Vector3d &kVec, const Ei
         }
     }
 
-    // std::cout << "Error: Could not find GP" << std::endl;
+    std::cout << "Error: Could not find GP" << std::endl;
     return Eigen::Vector3d(0, 0, 0);
 }
 
@@ -584,16 +598,11 @@ Eigen::Vector3d IrreducibleBZ::getG_gammaP(const Eigen::Vector3d &kVec, const Ei
 // Apply the symmetries to the k' vector and possibly also the k and q vectors???
 Eigen::Vector3d IrreducibleBZ::getG_gammaM(const Eigen::Vector3d &kVec, const Eigen::Vector3d &qVec)
 {
-
-    int m = 1;
-
-    // std::cout << "k: " << kvec(0) / (2 * pi) << " " << kvec(1) / (2 * pi) << " " << kvec(2) / (2 * pi) << " | q: " << qvec(0) / (2 * pi) << " " << qvec(1) / (2 * pi) << " " << qvec(2) / (2 * pi) << std::endl;
-
-    // std::cout << "getG function called__________________" << std::endl;
+    int m = 3;
 
     for (auto k_prime : irreducibleBZVectors)
     {
-        for (auto k_p_trans : symmetryGroup.applySymmetries(k_prime))
+        for (auto k_p_trans : applySymmOp(k_prime))
         {
             for (int i = -m; i <= m; i++)
             {
@@ -602,7 +611,7 @@ Eigen::Vector3d IrreducibleBZ::getG_gammaM(const Eigen::Vector3d &kVec, const Ei
                     for (int k = -m; k <= m; k++)
                     {
                         Eigen::Vector3d G = i * Eigen::Vector3d(2 * pi, 0, 0) + j * Eigen::Vector3d(0, 2 * pi, 0) + k * Eigen::Vector3d(0, 0, 2 * pi);
-                        if (distance(G, k_p_trans + kVec + qVec) < 0.01)
+                        if (distance(G, k_p_trans + kVec + qVec) < 0.001)
                         {
                             // std::cout << "G " << G(0) / (2 * pi) << " " << G(1) / (2 * pi) << " " << G(2) / (2 * pi) << " | k_prime: " << k_prime(0) / (2 * pi) << " " << k_prime(1) / (2 * pi) << " " << k_prime(2) / (2 * pi) << std::endl;
 
@@ -614,7 +623,9 @@ Eigen::Vector3d IrreducibleBZ::getG_gammaM(const Eigen::Vector3d &kVec, const Ei
         }
     }
 
-    // std::cout << "Error: Could not find GM" << std::endl;
+    std::cout << "Error: Could not find GM" << std::endl;
+    std::cout << "k: " << kVec(0) / (2 * pi) << " " << kVec(1) / (2 * pi) << " " << kVec(2) / (2 * pi) << " | q: " << qVec(0) / (2 * pi) << " " << qVec(1) / (2 * pi) << " " << qVec(2) / (2 * pi) << std::endl;
+    std::cout << "k+q: " << (kVec + qVec)(0) / (2 * pi) << " " << (kVec + qVec)(1) / (2 * pi) << " " << (kVec + qVec)(2) / (2 * pi) << std::endl;
     return Eigen::Vector3d(0, 0, 0);
 }
 
@@ -772,7 +783,7 @@ void IrreducibleBZ::integrate()
             double occNumPh_curr[3] = {phOccNumbers.at(vec_outer_idx)[0], phOccNumbers.at(vec_outer_idx)[1], phOccNumbers.at(vec_outer_idx)[2]};
             double occNumMag_curr = magOccNumbers.at(vec_outer_idx);
 
-            // Calculate sum of phonon occ number
+            // Calculate sum
             double sumPh[3] = {0, 0, 0};
             double sumMag = 0;
 
@@ -815,7 +826,7 @@ void IrreducibleBZ::integrate()
                     {
                         // handle terms with gamma minus and -q
                         {
-                            int rep_index_k_prime = k_prime_representatives_gammaM_minus_q[vec_inner_idx][vec_outer_idx];
+                            int rep_index_k_prime = k_prime_representatives_gammaM_plus_q[vec_inner_idx][vec_outer_idx];
                             double N_k_prime = magOccNumbers.at(rep_index_k_prime);
                             double deltaDistr = deltaDistrApprox(phDisp.at(vec_outer_idx).E[branch] - magDisp.at(vec_inner_idx).energy - magDisp.at(rep_index_k_prime).energy);
 
@@ -831,7 +842,6 @@ void IrreducibleBZ::integrate()
                         }
                         // handle terms with gamma P and +q
                         {
-
                             int rep_index_k_prime = k_prime_representatives_gammaP_plus_q[vec_inner_idx][vec_outer_idx];
                             double N_k_prime = magOccNumbers.at(rep_index_k_prime);
                             double deltaDistr = deltaDistrApprox(-phDisp.at(vec_outer_idx).E[branch] + magDisp.at(vec_inner_idx).energy + magDisp.at(rep_index_k_prime).energy);
@@ -841,7 +851,7 @@ void IrreducibleBZ::integrate()
 
                         // handle terms with gamma Z and +q
                         {
-                            int rep_index_k_prime = k_prime_representatives_gammaZ_plus_q[vec_inner_idx][vec_outer_idx];
+                            int rep_index_k_prime = k_prime_representatives_gammaZ_minus_q[vec_inner_idx][vec_outer_idx];
                             double N_k_prime = magOccNumbers.at(rep_index_k_prime);
                             double deltaDistrGammaZ = deltaDistrApprox(-phDisp.at(vec_outer_idx).E[branch] + magDisp.at(vec_inner_idx).energy - magDisp.at(rep_index_k_prime).energy);
 
@@ -1010,4 +1020,99 @@ void IrreducibleBZ::init_k_prime()
     }
 
     std::cout << "initialized k_prime vectors" << std::endl;
+}
+
+// given a line with a symmetry operatation e.g. "+x,-y,z" return a function that applies this operation to a vector
+std::function<Eigen::Vector3d(Eigen::Vector3d)> parseOperation(const std::string &line)
+{
+    return [line](Eigen::Vector3d vec) -> Eigen::Vector3d
+    {
+        Eigen::Vector3d transformed = Eigen::Vector3d::Zero();
+        std::istringstream iss(line);
+        for (int i = 0; i < 3; ++i)
+        {
+            char signChar = '+', axisChar, commaChar;
+            iss >> signChar; // Read the possible sign character
+            if (signChar != '-' && signChar != '+')
+            {
+                // If not a sign, it's an axis character; adjust accordingly
+                axisChar = signChar;
+                signChar = '+'; // Default to positive if no sign is explicitly given
+            }
+            else
+            {
+                // If a sign was read, the next character is the axis character
+                iss >> axisChar;
+            }
+
+            // After reading sign and axis, attempt to read a comma
+            if (i < 2)
+            {                     // No comma after the last axis character
+                iss >> commaChar; // Read and discard the comma
+                if (commaChar != ',')
+                {
+                    // If the expected comma is not found, something went wrong
+                    std::cerr << "Error: Expected comma in operation string." << std::endl;
+                    return vec; // Return the original vector unchanged
+                }
+            }
+
+            double sign = (signChar == '-' ? -1.0 : 1.0);
+            switch (axisChar)
+            {
+            case 'x':
+                transformed[i] = sign * vec[0];
+                break;
+            case 'y':
+                transformed[i] = sign * vec[1];
+                break;
+            case 'z':
+                transformed[i] = sign * vec[2];
+                break;
+            default:
+                std::cerr << "Error: Unexpected character in operation string." << std::endl;
+                return vec; // Return the original vector unchanged
+            }
+        }
+        return transformed;
+    };
+}
+
+void IrreducibleBZ::initSymmOp(std::string filepath)
+{
+    std::vector<std::function<Eigen::Vector3d(Eigen::Vector3d)>> operations;
+
+    std::string line;
+    std::ifstream file(filepath);
+
+    // Check if file opened successfully
+    if (!file.is_open())
+    {
+        std::cerr << "Could not open the file." << std::endl;
+        return;
+    }
+
+    // Read the operations from the file
+    while (std::getline(file, line))
+    {
+        operations.push_back(parseOperation(line));
+    }
+
+    this->operations = operations;
+
+    file.close();
+}
+
+std::vector<Eigen::Vector3d> IrreducibleBZ::applySymmOp(const Eigen::Vector3d &vec)
+{
+
+    std::vector<Eigen::Vector3d> transformed_vectors;
+    transformed_vectors.reserve(operations.size());
+
+    for (auto &op : operations)
+    {
+        Eigen::Vector3d transformedVec = op(vec);
+        transformed_vectors.push_back(transformedVec);
+    }
+    return transformed_vectors;
 }

@@ -29,8 +29,8 @@ for line in data:
 
 
 
-#plt.plot(time, total_energy, label='Total Energy')
+plt.plot(time, total_energy, label='Total Energy')
 plt.plot(time, magnetic_energy, label='Magnetic Energy')
-#plt.plot(time, phonon_energy, label='Phonon Energy')
+plt.plot(time, phonon_energy, label='Phonon Energy')
 plt.legend()
 plt.show()

@@ -54,7 +54,7 @@ extract_and_transform(input_file_path, output_file_path)
 def extract_data_grouped_by_q_vector(filename):
 
     # Conversion factor from THz to meV
-    freq_to_energy = 0.6582
+    freq_to_energy = 4.136
 
     # Pattern to identify the line with q vector
     q_pattern = "q ="
@@ -94,8 +94,7 @@ def extract_data_grouped_by_q_vector(filename):
                                                          '').replace(')', '').split()
                 vector = [float(vector_line[j]) for j in [0, 2, 4]]
 
-                # convert units from 2pi/a to 1/a
-                vector = [v * 2 * np.pi for v in vector]
+                vector = [v for v in vector]
 
                 # Append frequency and vector to the temp storage
                 temp_frequencies_and_vectors.append(
@@ -113,7 +112,7 @@ def extract_data_grouped_by_q_vector(filename):
 
 # Usage example:
 # Replace 'data.txt' with the path to your actual file
-data = extract_data_grouped_by_q_vector('scripts/Data/QE_Pol_Disp/8x8x8.txt')
+data = extract_data_grouped_by_q_vector('scripts/Data/QE_Pol_Disp/8x8x8_irrBZ.txt')
 
 '''
 for item in data:
@@ -151,9 +150,9 @@ def write_data_to_file(data, filename):
 # Usage example:
 # Make sure this calls the appropriate function
 data = extract_data_grouped_by_q_vector(
-    'scripts/Data/QE_Pol_Disp/4x4x4_path_G_H.txt')
+    'Parameters/4x4x4/matdyn.modes')
 write_data_to_file(
-    data, filename='scripts/Data/QE_Pol_Disp/formatted_4x4x4_path_G_H.txt')
+    data, filename='Parameters/4x4x4/irrPoints.txt')
 
 
 def plot_disp_from_file(filename):

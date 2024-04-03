@@ -245,9 +245,15 @@ std::vector<PhononDispParam> readPhononDispParams(const std::string &filePath)
             }
         }
 
-        //param.E[0] *= 10;
-        //param.E[1] *= 10;
-        //param.E[2] *= 10; 
+        // param.E[0] *= 10;
+        // param.E[1] *= 10;
+        // param.E[2] *= 10;
+
+        // Shift the energies 
+        //for (int i = 0; i < 3; i++)
+        //{
+        //    param.E[i] += 0.1;
+        //}
 
         params.push_back(param);
     }
