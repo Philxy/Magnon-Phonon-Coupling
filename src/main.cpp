@@ -138,54 +138,51 @@ int main()
     // SymmetrieGroup symGroups;
     // symGroups.init("Parameters/symmetryMatricesAll.txt");
 
-    //init irreducible BZ
+    // init irreducible BZ
     IrreducibleBZ irrBZ;
     // irrBZ.symmetryGroup = symGroups;
-    irrBZ.init("Parameters/4x4x4/irrPoints.txt");
-    // init magnon and phonon dispersion
-    irrBZ.initMagnonPhononDispFromFile("Parameters/4x4x4/phData.txt", "Parameters/J_bccFe.txt", "Parameters/4x4x4/magDisp.txt");
-    irrBZ.readMultiplicities("Parameters/4x4x4/multiplicity.txt");
-
+    irrBZ.init("Parameters/4x4x4/irrPoints_edit.txt");
+    irrBZ.initMagnonPhononDispFromFile("Parameters/4x4x4/phData_edit.txt", "Parameters/J_bccFe.txt", "Parameters/4x4x4/magDisp.txt");
+    irrBZ.readMultiplicities("Parameters/4x4x4/multiplicity_edit.txt");
     irrBZ.initSymmOp("Parameters/tu_graz_symm_bcc.txt");
 
+    // init coefficients
+    irrBZ.init_k_prime();
+    irrBZ.initCoefficients(parameters, nFT);
+    //irrBZ.saveCoefficientsAsSqrtAbs("Outputs/coefficients.txt");
+    irrBZ.readCoefficients("Outputs/coefficients.txt");
+    irrBZ.initOccNumbers(10, 10); // 25.85, 30.0 (room temp)
+    irrBZ.integrate();
 
     // Testing the symmetry operations
-    //Eigen::Vector3d q(1, 2, 3);
-    //for (auto op: irrBZ.operations)
+    // Eigen::Vector3d q(1, 2, 3);
+    // for (auto op: irrBZ.operations)
     //{
     //    Eigen::Vector3d transf = op(q);
     //    std::cout << "Symmetry operation: " << transf(0) << " " << transf(1) << " " << transf(2) << std::endl;
     //}
 
-    //for (auto k : irrBZ.irreducibleBZVectors)
+    // for (auto k : irrBZ.irreducibleBZVectors)
     //{
-    //    for (auto q : irrBZ.irreducibleBZVectors)
-    //    {
-    //        auto sum = k+q;
+    //     for (auto q : irrBZ.irreducibleBZVectors)
+    //     {
+    //         auto sum = k + q;
     //
-    //        int rep = irrBZ.findRepresentative(sum);
-    //        if (rep == -1)
-    //        {
-    //            std::cout << "Error: Could not find representative" << std::endl;
-    //            std::cout << "k: " << k(0) << " " << k(1) << " " << k(2) << " | q: " << q(0) << " " << q(1) << " " << q(2) << " | sum: " << sum(0) << " " << sum(1) << " " << sum(2) << std::endl;
-    //        }
-    //        else
-    //        {
-    //            std::cout << "Success" << std::endl;
-    //        }
-    //        //std::cout << k(0) / (2 * pi) << " " << k(1) / (2 * pi) << " " << k(2) / (2 * pi) << " | " << k_trans(0) / (2 * pi) << " " << k_trans(1) / (2 * pi) << " " << k_trans(2) / (2 * pi) << std::endl;
+    //         int rep = irrBZ.findRepresentative(sum);
+    //         if (rep == -1)
+    //         {
+    //             std::cout << "Error: Could not find representative" << std::endl;
+    //             std::cout << "k: " << k(0) << " " << k(1) << " " << k(2) << " | q: " << q(0) << " " << q(1) << " " << q(2) << " | sum: " << sum(0) << " " << sum(1) << " " << sum(2) << std::endl;
+    //         }
+    //         else
+    //         {
     //
-    //    }
-    //}
-
-    // init coefficients
-    irrBZ.init_k_prime();
-    // irrBZ.initCoefficients(parameters, nFT);
-    // irrBZ.saveCoefficientsAsSqrtAbs("Outputs/coefficients.txt");
-    // irrBZ.readCoefficients("Outputs/coefficients.txt");
-    // irrBZ.initOccNumbers();
-    // irrBZ.integrate();
-
+    //             std::cout << "Success " << rep << std::endl;
+    //         }
+    //         std::cout << k(0) / (2 * pi) << " " << k(1) / (2 * pi) << " " << k(2) / (2 * pi) << " | " << q(0) / (2 * pi) << " " << q(1) / (2 * pi) << " " << q(2) / (2 * pi) << std::endl;
+    //         std::cout << "Sum: " << sum(0) / (2 * pi) << " " << sum(1) / (2 * pi) << " " << sum(2) / (2 * pi) << " | rep: " << irrBZ.irreducibleBZVectors.at(rep)(0) / (2 * pi) << " " << irrBZ.irreducibleBZVectors.at(rep)(1) / (2 * pi) << " " << irrBZ.irreducibleBZVectors.at(rep)(2) / (2 * pi) << std::endl;
+    //     }
+    // }
     return 0;
 
     // Check if the irr points are their own representative

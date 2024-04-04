@@ -2,7 +2,7 @@
 #include <complex>
 #include <vector>
 #include <cassert>
-#include <Eigen/Dense>
+#include "EigenPCH.h"
 #include <omp.h>
 #include "util.h"
 #include "couplingParameters.h"

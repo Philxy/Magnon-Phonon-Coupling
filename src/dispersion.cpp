@@ -249,8 +249,8 @@ std::vector<PhononDispParam> readPhononDispParams(const std::string &filePath)
         // param.E[1] *= 10;
         // param.E[2] *= 10;
 
-        // Shift the energies 
-        //for (int i = 0; i < 3; i++)
+        // Shift the energies
+        // for (int i = 0; i < 3; i++)
         //{
         //    param.E[i] += 0.1;
         //}
@@ -284,7 +284,7 @@ std::vector<MagnonDispParam> getMagnonDispFromPhononDisp(const std::vector<Phono
         mag.ky = ph.ky;
         mag.kz = ph.kz;
 
-        std::complex<double> Jk = 1.0 / S * (FTJiso(ph.kx, ph.ky, ph.kz, parameters_J_iso).real() * conversionFactor + d_aniso);
+        std::complex<double> Jk = 2.0 * 1.0 / S * (FTJiso(ph.kx, ph.ky, ph.kz, parameters_J_iso).real() * conversionFactor + d_aniso);
         outFileIso << ph.kx << "," << ph.ky << "," << ph.kz << "," << Jk << "\n";
 
         mag.energy = Jk.real();

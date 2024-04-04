@@ -1,7 +1,6 @@
 #pragma once
 #include <iostream>
-#include <Eigen/Dense>
-#include <Eigen/Eigenvalues>
+#include "EigenPCH.h"
 #include "path.h"
 #include "dispersion.h"
 #include "util.h"

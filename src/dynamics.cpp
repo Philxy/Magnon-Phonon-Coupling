@@ -1,46 +1,8 @@
 #include "../include/dynamics.h"
 
-// returns true or false depending on whether the k vector is inside the first BZ
-// CHECK FOR CORRECTNESS REQUIRED
-bool insideFirstBZ(Eigen::Vector3d kVec)
+double BoseEinstein(double energy, double thermalEnergy)
 {
-    double kx = kVec(0);
-    double ky = kVec(1);
-    double kz = kVec(2);
-
-    if (kx < b_1(0) / 2 && kx > -b_1(0) / 2 && ky < b_2(1) / 2 && ky > -b_2(1) / 2 && kz < b_3(2) / 2 && kz > -b_3(2) / 2)
-    {
-        return true;
-    }
-    else
-    {
-        return false;
-    }
-}
-
-Eigen::Vector3d mapToFirstBZ(Eigen::Vector3d kVec)
-{
-
-    const int m = 5;
-
-    for (int i = -m; i <= m; i++)
-    {
-        for (int j = -m; j <= m; j++)
-        {
-            for (int k = -m; k <= m; k++)
-            {
-                Eigen::Vector3d kVec_temp = kVec + i * b_1 + j * b_2 + k * b_3;
-                if (insideFirstBZ(kVec_temp))
-                {
-                    return kVec_temp;
-                }
-            }
-        }
-    }
-
-    std::cout << "Error: Could not map k vector to first BZ" << std::endl;
-
-    return Eigen::Vector3d(0, 0, 0);
+    return 1.0 / (exp(energy / thermalEnergy) - 1);
 }
 
 double distance(const Eigen::Vector3d &k1, const Eigen::Vector3d &k2)
@@ -334,30 +296,18 @@ int IrreducibleBZ::findClosestVectorIndex(const Eigen::Vector3d &kVec)
     return closestIndex;
 }
 
-int findClosestVecIdx(const std::vector<Eigen::Vector3d> &vecList, const Eigen::Vector3d &vec)
-{
-
-    if (vecList.empty())
-    {
-        throw std::runtime_error("Error: No vectors in the list");
-    }
-
-    return -1;
-}
-
-void IrreducibleBZ::initOccNumbers()
+void IrreducibleBZ::initOccNumbers(double thermalEnergyPh, double thermalEnergyMag)
 {
     phOccNumbers.resize(irreducibleBZVectors.size());
     magOccNumbers.resize(irreducibleBZVectors.size());
 
-    int initial_value = 1;
-
     for (int i = 0; i < irreducibleBZVectors.size(); i++)
     {
-        phOccNumbers.at(i)[0] = initial_value;
-        phOccNumbers.at(i)[1] = initial_value;
-        phOccNumbers.at(i)[2] = initial_value;
-        magOccNumbers.at(i) = initial_value;
+
+        phOccNumbers.at(i)[0] = BoseEinstein(phDisp.at(i).E[0], thermalEnergyPh);
+        phOccNumbers.at(i)[1] = BoseEinstein(phDisp.at(i).E[1], thermalEnergyPh);
+        phOccNumbers.at(i)[2] = BoseEinstein(phDisp.at(i).E[2], thermalEnergyPh);
+        magOccNumbers.at(i) = BoseEinstein(phDisp.at(i).E[0], thermalEnergyMag);
     }
 }
 
@@ -371,6 +321,14 @@ void IrreducibleBZ::initMagnonPhononDispFromFile(std::string filepathPh, std::st
     std::cout << "Successfully initialized magnon and phonon data from file" << std::endl;
 }
 
+/*
+Calculates the coupling coefficients \Gamma_{\pm} and \Gamma_{Z} for combinations of the given irreducible BZ vectors
+- The units of the parameters are expected to be in meV/a.u.
+- The units of the phonon dispersion are expected to be in meV
+- The resulting coefficients are in units of meV
+- The results are stored in the class variables gammaPlusGrid, gammaMinusGrid, and gammaZGrid (and their negative sign counterparts)
+- The negative sign represents the negative sign of the second q vector in the coefficients index
+*/
 void IrreducibleBZ::initCoefficients(const std::vector<CouplingParameter> &parameters, int ftN)
 {
     // Resize coefficients
@@ -470,11 +428,11 @@ void IrreducibleBZ::initCoefficients(const std::vector<CouplingParameter> &param
                 std::complex<double> gammaPJyxmu = J_kq(-kVec(0), -kVec(1), -kVec(2), qVec(0), qVec(1), qVec(2), parameters, Y, X, ax);
                 std::complex<double> gammaPJxymu = J_kq(-kVec(0), -kVec(1), -kVec(2), qVec(0), qVec(1), qVec(2), parameters, X, Y, ax);
 
-                std::complex<double> Jxxmu = gammaPJxxmu;
-                std::complex<double> Jyymu = gammaPJyymu;
-                std::complex<double> Jyxmu = gammaPJyxmu;
-                std::complex<double> Jxymu = gammaPJxymu;
-                std::complex<double> Jzzmu = J_kq(G_gammaZ(0) - qVec(0), G_gammaZ(1) - qVec(1), G_gammaZ(2) - qVec(2), qVec(0), qVec(1), qVec(2), parameters, Z, Z, ax);
+                std::complex<double> gammaZJxxmu = gammaPJxxmu;
+                std::complex<double> gammaZJyymu = gammaPJyymu;
+                std::complex<double> gammaZJyxmu = gammaPJyxmu;
+                std::complex<double> gammaZJxymu = gammaPJxymu;
+                std::complex<double> gammaZJzzmu = J_kq(G_gammaZ(0) - qVec(0), G_gammaZ(1) - qVec(1), G_gammaZ(2) - qVec(2), qVec(0), qVec(1), qVec(2), parameters, Z, Z, ax);
 
                 // Coefficients for the gamma+, gamma-, and gammaZ terns with negative q
                 std::complex<double> gammaMJxxmu_negativeSign = J_kq(kVec(0), kVec(1), kVec(2), -qVec(0), -qVec(1), -qVec(2), parameters, X, X, ax);
@@ -487,18 +445,18 @@ void IrreducibleBZ::initCoefficients(const std::vector<CouplingParameter> &param
                 std::complex<double> gammaPJyxmu_negativeSign = J_kq(-kVec(0), -kVec(1), -kVec(2), -qVec(0), -qVec(1), -qVec(2), parameters, Y, X, ax);
                 std::complex<double> gammaPJxymu_negativeSign = J_kq(-kVec(0), -kVec(1), -kVec(2), -qVec(0), -qVec(1), -qVec(2), parameters, X, Y, ax);
 
-                std::complex<double> Jxxmu_negativeSign = gammaPJxxmu_negativeSign;
-                std::complex<double> Jyymu_negativeSign = gammaPJyymu_negativeSign;
-                std::complex<double> Jyxmu_negativeSign = gammaPJyxmu_negativeSign;
-                std::complex<double> Jxymu_negativeSign = gammaPJxymu_negativeSign;
-                std::complex<double> Jzzmu_negativeSign = J_kq(G_gammaZ(0) - qVec(0), G_gammaZ(1) - qVec(1), G_gammaZ(2) - qVec(2), -qVec(0), -qVec(1), -qVec(2), parameters, Z, Z, ax);
+                std::complex<double> gammaZJxxmu_negativeSign = gammaPJxxmu_negativeSign;
+                std::complex<double> gammaZJyymu_negativeSign = gammaPJyymu_negativeSign;
+                std::complex<double> gammaZJyxmu_negativeSign = gammaPJyxmu_negativeSign;
+                std::complex<double> gammaZJxymu_negativeSign = gammaPJxymu_negativeSign;
+                std::complex<double> gammaZJzzmu_negativeSign = J_kq(G_gammaZ(0) - qVec(0), G_gammaZ(1) - qVec(1), G_gammaZ(2) - qVec(2), -qVec(0), -qVec(1), -qVec(2), parameters, Z, Z, ax);
 
                 for (int branch = 0; branch < 3; branch++)
                 {
                     // positive sign of q
                     gammaMinus[branch] += 3.8636 * sqrt(ftN) / (2.0 * S) * (gammaMJxxmu - gammaMJyymu - i * gammaMJxymu - i * gammaMJyxmu) * sqrt(1 / (2 * atomicMass * phDisp.at(j).E[branch])) * phDisp.at(j).polVectors[ax][branch];
                     gammaPlus[branch] += 3.8636 * sqrt(ftN) / (2.0 * S) * (gammaPJxxmu - gammaPJyymu + i * gammaPJxymu + i * gammaPJyxmu) * sqrt(1 / (2 * atomicMass * phDisp.at(j).E[branch])) * phDisp.at(j).polVectors[ax][branch];
-                    gammaZ[branch] += 3.8636 * sqrt(ftN) / (2.0 * S) * (2.0 * Jxxmu + 2.0 * Jyymu - 4.0 * Jzzmu + 2.0 * i * Jyxmu - 2.0 * i * Jxymu) * sqrt(1 / (2 * atomicMass * phDisp.at(j).E[branch])) * phDisp.at(j).polVectors[ax][branch];
+                    gammaZ[branch] += 3.8636 * sqrt(ftN) / (2.0 * S) * (2.0 * gammaZJxxmu + 2.0 * gammaZJyymu - 4.0 * gammaZJzzmu + 2.0 * i * gammaZJyxmu - 2.0 * i * gammaZJxymu) * sqrt(1 / (2 * atomicMass * phDisp.at(j).E[branch])) * phDisp.at(j).polVectors[ax][branch];
 
                     // debug statement
                     // if (gammaZ[branch].real() > 1E4 || gammaZ[branch].imag() > 1E4)
@@ -510,7 +468,7 @@ void IrreducibleBZ::initCoefficients(const std::vector<CouplingParameter> &param
                     // neg sign of q
                     gammaMinus_negativeSign[branch] += 3.8636 * sqrt(ftN) / (2.0 * S) * (gammaMJxxmu_negativeSign - gammaMJyymu_negativeSign - i * gammaMJxymu_negativeSign - i * gammaMJyxmu_negativeSign) * sqrt(1 / (2 * atomicMass * phDisp.at(j).E[branch])) * phDisp.at(j).polVectors[ax][branch];
                     gammaPlus_negativeSign[branch] += 3.8636 * sqrt(ftN) / (2.0 * S) * (gammaPJxxmu_negativeSign - gammaPJyymu_negativeSign + i * gammaPJxymu_negativeSign + i * gammaPJyxmu_negativeSign) * sqrt(1 / (2 * atomicMass * phDisp.at(j).E[branch])) * phDisp.at(j).polVectors[ax][branch];
-                    gammaZ_negativeSign[branch] += 3.8636 * sqrt(ftN) / (2.0 * S) * (2.0 * Jxxmu_negativeSign + 2.0 * Jyymu_negativeSign - 4.0 * Jzzmu_negativeSign + 2.0 * i * Jyxmu_negativeSign - 2.0 * i * Jxymu_negativeSign) * sqrt(1 / (2 * atomicMass * phDisp.at(j).E[branch])) * phDisp.at(j).polVectors[ax][branch];
+                    gammaZ_negativeSign[branch] += 3.8636 * sqrt(ftN) / (2.0 * S) * (2.0 * gammaZJxxmu_negativeSign + 2.0 * gammaZJyymu_negativeSign - 4.0 * gammaZJzzmu_negativeSign + 2.0 * i * gammaZJyxmu_negativeSign - 2.0 * i * gammaZJxymu_negativeSign) * sqrt(1 / (2 * atomicMass * phDisp.at(j).E[branch])) * phDisp.at(j).polVectors[ax][branch];
                 }
             }
 
@@ -750,14 +708,15 @@ void IrreducibleBZ::readCoefficients(std::string filename)
 
 double deltaDistrApprox(double x)
 {
-    return 1.0 / (sqrt(pi)) * exp(-x * x / .1);
+    double a = 2.8; // 2 < a <  a=5 -> way to much, a=2.2 -> basically always zero, a=3 -> energy escalates slowly
+    return 1.0 / (a * sqrt(pi)) * exp(-(x / a) * (x / a));
 }
 
 void IrreducibleBZ::integrate()
 {
 
-    double tMax = 1E-14;
-    double dt = 1E-18;
+    double tMax = 10;
+    double dt = 1E-4;
     int nMax = int(tMax / dt);
 
     std::vector<std::array<double, 3>> energiesPh(nMax);
@@ -765,10 +724,11 @@ void IrreducibleBZ::integrate()
 
     std::ofstream energy_file("Outputs/time_evolut_energies.txt");
 
-    // Loop over time
+    // Main integration loop over time
     for (int n = 0; n < nMax; n++)
     {
 
+        // init the new occupation for the next time step
         std::vector<std::array<double, 3>> occNumPh_new(irreducibleBZVectors.size(), {0, 0, 0});
         std::vector<double> occNumMag_new(irreducibleBZVectors.size(), 0);
 
@@ -777,9 +737,7 @@ void IrreducibleBZ::integrate()
         for (int vec_outer_idx = 0; vec_outer_idx < irreducibleBZVectors.size(); vec_outer_idx++)
         {
 
-            // std::cout << "outer idx: " << vec_outer_idx << std::endl;
-
-            // Current occupation numbers
+            // Capture the occupation numbers at the current time in the main integration loop
             double occNumPh_curr[3] = {phOccNumbers.at(vec_outer_idx)[0], phOccNumbers.at(vec_outer_idx)[1], phOccNumbers.at(vec_outer_idx)[2]};
             double occNumMag_curr = magOccNumbers.at(vec_outer_idx);
 
@@ -822,6 +780,9 @@ void IrreducibleBZ::integrate()
                 {
                     double N_k = magOccNumbers.at(vec_inner_idx);
 
+                    // multiplicities for the inner loop over the irr BZ
+                    double m = multiplicities.at(vec_inner_idx);
+
                     // phonon
                     {
                         // handle terms with gamma minus and -q
@@ -830,7 +791,7 @@ void IrreducibleBZ::integrate()
                             double N_k_prime = magOccNumbers.at(rep_index_k_prime);
                             double deltaDistr = deltaDistrApprox(phDisp.at(vec_outer_idx).E[branch] - magDisp.at(vec_inner_idx).energy - magDisp.at(rep_index_k_prime).energy);
 
-                            sumPh[branch] += (occNumPh_curr[branch] + 1) * gammaMinusGrid_negativeSign[vec_inner_idx][vec_outer_idx][branch].real() * N_k * N_k_prime * deltaDistr;
+                            sumPh[branch] += m * (occNumPh_curr[branch] + 1) * gammaMinusGrid_negativeSign[vec_inner_idx][vec_outer_idx][branch].real() * N_k * N_k_prime * deltaDistr;
                         }
                         // handle terms with gamma z and -q
                         {
@@ -838,7 +799,7 @@ void IrreducibleBZ::integrate()
                             double N_k_prime = magOccNumbers.at(rep_index_k_prime);
                             double deltaDistr = deltaDistrApprox(phDisp.at(vec_outer_idx).E[branch] + magDisp.at(vec_inner_idx).energy - magDisp.at(rep_index_k_prime).energy);
 
-                            sumPh[branch] += (occNumPh_curr[branch] + 1) * gammaZGrid_negativeSign[vec_inner_idx][vec_outer_idx][branch].real() * (N_k + 1) * N_k_prime * deltaDistr;
+                            sumPh[branch] += m * (occNumPh_curr[branch] + 1) * gammaZGrid_negativeSign[vec_inner_idx][vec_outer_idx][branch].real() * (N_k + 1) * N_k_prime * deltaDistr;
                         }
                         // handle terms with gamma P and +q
                         {
@@ -846,7 +807,7 @@ void IrreducibleBZ::integrate()
                             double N_k_prime = magOccNumbers.at(rep_index_k_prime);
                             double deltaDistr = deltaDistrApprox(-phDisp.at(vec_outer_idx).E[branch] + magDisp.at(vec_inner_idx).energy + magDisp.at(rep_index_k_prime).energy);
 
-                            sumPh[branch] -= (occNumPh_curr[branch]) * gammaPlusGrid[vec_inner_idx][vec_outer_idx][branch].real() * (N_k + 1) * (N_k_prime + 1) * deltaDistr;
+                            sumPh[branch] -= m * (occNumPh_curr[branch]) * gammaPlusGrid[vec_inner_idx][vec_outer_idx][branch].real() * (N_k + 1) * (N_k_prime + 1) * deltaDistr;
                         }
 
                         // handle terms with gamma Z and +q
@@ -855,7 +816,7 @@ void IrreducibleBZ::integrate()
                             double N_k_prime = magOccNumbers.at(rep_index_k_prime);
                             double deltaDistrGammaZ = deltaDistrApprox(-phDisp.at(vec_outer_idx).E[branch] + magDisp.at(vec_inner_idx).energy - magDisp.at(rep_index_k_prime).energy);
 
-                            sumPh[branch] -= (occNumPh_curr[branch]) * gammaZGrid[vec_inner_idx][vec_outer_idx][branch].real() * (N_k + 1) * (N_k_prime)*deltaDistrGammaZ;
+                            sumPh[branch] -= m * (occNumPh_curr[branch]) * gammaZGrid[vec_inner_idx][vec_outer_idx][branch].real() * (N_k + 1) * (N_k_prime)*deltaDistrGammaZ;
                         }
                     }
 
@@ -866,7 +827,7 @@ void IrreducibleBZ::integrate()
                             int rep_index_k_prime = k_prime_representatives_gammaP_plus_q[vec_outer_idx][vec_inner_idx];
                             double N_k_prime = magOccNumbers.at(rep_index_k_prime);
                             double deltaDistr = deltaDistrApprox(magDisp.at(vec_outer_idx).energy + magDisp.at(rep_index_k_prime).energy - phDisp.at(vec_inner_idx).E[branch]);
-                            sumMag += (occNumMag_curr + 1) * 2 * gammaPlusGrid[vec_outer_idx][vec_inner_idx][branch].real() * (N_k_prime + 1) * phOccNumbers.at(vec_inner_idx)[branch] * deltaDistr;
+                            sumMag += m * (occNumMag_curr + 1) * 2 * gammaPlusGrid[vec_outer_idx][vec_inner_idx][branch].real() * (N_k_prime + 1) * phOccNumbers.at(vec_inner_idx)[branch] * deltaDistr;
                         }
                         // positive gammaZ term
                         {
@@ -877,7 +838,7 @@ void IrreducibleBZ::integrate()
                             double n_qv = phOccNumbers.at(vec_inner_idx)[branch];
                             double n_mqv = n_qv; // phOccNumbers.at(findRepresentative(-irreducibleBZVectors.at(vec_inner_idx)))[branch];
 
-                            sumMag += (occNumMag_curr + 1) * N_k_prime * (n_qv * deltaDistr_pmm + (n_mqv + 1) * deltaDistr_pmp) * gammaZGrid[vec_outer_idx][vec_inner_idx][branch].real();
+                            sumMag += m * (occNumMag_curr + 1) * N_k_prime * (n_qv * deltaDistr_pmm + (n_mqv + 1) * deltaDistr_pmp) * gammaZGrid[vec_outer_idx][vec_inner_idx][branch].real();
                         }
 
                         // negative gammaM term
@@ -887,7 +848,7 @@ void IrreducibleBZ::integrate()
                             double n_mqv = phOccNumbers.at(vec_inner_idx)[branch]; // phOccNumbers.at(findRepresentative(-irreducibleBZVectors.at(vec_inner_idx)))[branch];
                             double deltaDistr = deltaDistrApprox(-magDisp.at(vec_outer_idx).energy - magDisp.at(rep_index_k_prime).energy + phDisp.at(vec_inner_idx).E[branch]);
 
-                            sumMag -= occNumMag_curr * 2 * gammaMinusGrid[vec_outer_idx][vec_inner_idx][branch].real() * N_k_prime * (n_mqv + 1) * deltaDistr;
+                            sumMag -= m * occNumMag_curr * 2 * gammaMinusGrid[vec_outer_idx][vec_inner_idx][branch].real() * N_k_prime * (n_mqv + 1) * deltaDistr;
                         }
 
                         // negative gammaZ term
@@ -899,7 +860,7 @@ void IrreducibleBZ::integrate()
                             double n_qv = phOccNumbers.at(vec_inner_idx)[branch];
                             double n_mqv = n_qv; // phOccNumbers.at(findRepresentative(-irreducibleBZVectors.at(vec_inner_idx)))[branch];
 
-                            sumMag -= occNumMag_curr * gammaZGrid[vec_outer_idx][vec_inner_idx][branch].real() * (N_k_prime + 1) * (n_qv * deltaDistr_mpm + (n_mqv + 1) * deltaDistr_mpp);
+                            sumMag -= m * occNumMag_curr * gammaZGrid[vec_outer_idx][vec_inner_idx][branch].real() * (N_k_prime + 1) * (n_qv * deltaDistr_mpm + (n_mqv + 1) * deltaDistr_mpp);
                         }
                     }
                 }
@@ -907,31 +868,30 @@ void IrreducibleBZ::integrate()
                 // Multiply with common prefactor and fix units
                 for (int branch = 0; branch < 3; branch++)
                 {
-                    sumPh[branch] *= 2 * pi * multiplicities.at(vec_outer_idx);
+                    sumPh[branch] *= 2 * pi;
                 }
-                sumMag *= 2 * pi * multiplicities.at(vec_outer_idx);
-
-                // assign values the new occupation numbers
-                occNumMag_new.at(vec_outer_idx) = occNumMag_curr + dt * sumMag;
-                for (int branch = 0; branch < 3; branch++)
-                {
-                    occNumPh_new.at(vec_outer_idx)[branch] = occNumPh_curr[branch] + dt * sumPh[branch];
-                }
+                sumMag *= 2 * pi;
             }
+            // assign values the new occupation numbers
+            occNumMag_new.at(vec_outer_idx) = occNumMag_curr + dt * sumMag;
+            for (int branch = 0; branch < 3; branch++)
+            {
+                occNumPh_new.at(vec_outer_idx)[branch] = occNumPh_curr[branch] + dt * sumPh[branch];
+            }
+            // std::cout << sumMag << std::endl;
+            // std::cout << sumPh[0] << " " << sumPh[1] << " " << sumPh[2] << std::endl;
         }
-
-        // Update occupation numbers
-        magOccNumbers = occNumMag_new;
-        phOccNumbers = occNumPh_new;
 
         // calculate the total energy
         double magEnergy = 0;
         double phEnergy = 0;
+        double totalEnergy = 0;
         for (int i = 0; i < irreducibleBZVectors.size(); i++)
         {
             magEnergy += multiplicities.at(i) * magOccNumbers.at(i) * magDisp.at(i).energy;
-            phEnergy += multiplicities.at(i) * phOccNumbers.at(i)[0] * phDisp.at(i).E[0] + phOccNumbers.at(i)[1] * phDisp.at(i).E[1] + phOccNumbers.at(i)[2] * phDisp.at(i).E[2];
+            phEnergy += multiplicities.at(i) * (phOccNumbers.at(i)[0] * phDisp.at(i).E[0] + phOccNumbers.at(i)[1] * phDisp.at(i).E[1] + phOccNumbers.at(i)[2] * phDisp.at(i).E[2]);
         }
+        totalEnergy = magEnergy + phEnergy;
 
         // Print progress
         if (n % 1000 == 0)
@@ -941,12 +901,20 @@ void IrreducibleBZ::integrate()
 
         if (n % 10 == 0)
         {
-
-            // std::cout << n * dt << " " << magEnergy << " " << phEnergy << " " << magEnergy + phEnergy << "\n";
-
             // write energy to file
-            energy_file << n * dt << " " << magEnergy << " " << phEnergy << " " << magEnergy + phEnergy << "\n";
+            energy_file << n * dt << " " << magEnergy << " " << phEnergy << " " << totalEnergy << " ";
+
+            for (int i = 0; i < irreducibleBZVectors.size(); i++)
+            {
+                energy_file << magOccNumbers.at(i) << " " << phOccNumbers.at(i)[0] << " " << phOccNumbers.at(i)[1] << " " << phOccNumbers.at(i)[2] << " ";
+            }
+
+            energy_file << "\n";
         }
+
+        // Update occupation numbers
+        magOccNumbers = occNumMag_new;
+        phOccNumbers = occNumPh_new;
     }
     energy_file.close();
 }

@@ -1,6 +1,5 @@
 #pragma once
-#include <Eigen/Dense>
-#include <Eigen/Eigenvalues>
+#include "EigenPCH.h"
 #include <cmath>
 #include <iostream>
 

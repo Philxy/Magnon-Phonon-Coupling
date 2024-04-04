@@ -1,7 +1,7 @@
 #pragma once
 #include "fourierTransform.h"
 #include "dispersion.h"
-#include <Eigen/Dense>
+#include "EigenPCH.h"
 #include "globals.h"
 #include <fstream>
 #include <sstream>
@@ -74,7 +74,7 @@ struct IrreducibleBZ
     // initializes the magnon and phonon dispersion from files
     void initMagnonPhononDispFromFile(std::string filepathPh, std::string filepathMag, std::string magnonDispOutputPath);
 
-    void initOccNumbers();                                                            // initializes the occupation numbers
+    void initOccNumbers(double thermalEnergyPh, double thermalEnergyMag);                                                            // initializes the occupation numbers
     void initCoefficients(const std::vector<CouplingParameter> &parameters, int ftN); // initializes the coefficients
     void readMultiplicities(const std::string &filename);                             // retrieves the multiplicities from a file
     void init_k_prime();
@@ -103,6 +103,4 @@ struct IrreducibleBZ
 
 };
 
-bool insideFirstBZ(Eigen::Vector3d kVec);
-Eigen::Vector3d mapToFirstBZ(Eigen::Vector3d kVec);
 double distance(const Eigen::Vector3d &k1, const Eigen::Vector3d &k2);
