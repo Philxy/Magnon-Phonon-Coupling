@@ -186,7 +186,7 @@ std::complex<double> J_kq(double kx, double ky, double kz, double qx, double qy,
             continue;
         }
 
-        result += p.J[alpha][beta] * std::exp(+i * (kx * p.x_ij + ky * p.y_ij + kz * p.z_ij) + i * (qx * p.x_jk + qy * p.y_jk + qz * p.z_jk));
+        result += p.J[alpha][beta] * std::exp(-i * (kx * p.x_ij + ky * p.y_ij + kz * p.z_ij) - i * (qx * p.x_jk + qy * p.y_jk + qz * p.z_jk));
     }
     return result;
 }

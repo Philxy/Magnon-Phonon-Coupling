@@ -26,18 +26,16 @@ std::vector<Eigen::Vector3d> SymmetrieGroup::applySymmetries(const Eigen::Vector
 int IrreducibleBZ::findRepresentative(const Eigen::Vector3d &kVec)
 {
     const double dist_threshold = 0.001;
-    const int m = 3;
 
-    double curr_min_dist = 1E7;
-    int curr_min_idx = -1;
+    const int indices[9] = {0, 1, -1, 2, -2, 3, -3, 4, -4};
 
     for (auto transformedVec : applySymmOp(kVec))
     {
-        for (int i = -m; i <= m; i++)
+        for (int i : indices)
         {
-            for (int j = -m; j <= m; j++)
+            for (int j : indices)
             {
-                for (int k = -m; k <= m; k++)
+                for (int k : indices)
                 {
                     Eigen::Vector3d shifted_transformed_kVec = transformedVec + i * Eigen::Vector3d(2 * pi, 0, 0) + j * Eigen::Vector3d(0, 2 * pi, 0) + k * Eigen::Vector3d(0, 0, 2 * pi);
 
@@ -303,12 +301,12 @@ void IrreducibleBZ::initOccNumbers(double thermalEnergyPh, double thermalEnergyM
 
     for (int i = 0; i < irreducibleBZVectors.size(); i++)
     {
-
         phOccNumbers.at(i)[0] = BoseEinstein(phDisp.at(i).E[0], thermalEnergyPh);
         phOccNumbers.at(i)[1] = BoseEinstein(phDisp.at(i).E[1], thermalEnergyPh);
         phOccNumbers.at(i)[2] = BoseEinstein(phDisp.at(i).E[2], thermalEnergyPh);
-        magOccNumbers.at(i) = BoseEinstein(phDisp.at(i).E[0], thermalEnergyMag);
+        magOccNumbers.at(i) = BoseEinstein(magDisp.at(i).energy, thermalEnergyMag);
     }
+    std::cout << "Occupation numbers initialized successfully" << std::endl;
 }
 
 void IrreducibleBZ::initMagnonPhononDispFromFile(std::string filepathPh, std::string filepathMag, std::string magnonDispOutputPath)
@@ -412,8 +410,11 @@ void IrreducibleBZ::initCoefficients(const std::vector<CouplingParameter> &param
             std::complex<double> gammaMinus_negativeSign[] = {0, 0, 0};
             std::complex<double> gammaZ_negativeSign[] = {0, 0, 0};
 
-            Eigen::Vector3d G_gammaZ = getG_Z(kVec, qVec);
-            Eigen::Vector3d G_gammaZ_negativeSign = getG_Z(kVec, -qVec);
+            int signs_plus_q[3] = {-1, 1, 1};
+            int signs_minus_q[3] = {-1, 1, -1};
+
+            Eigen::Vector3d gammaZ_k_prime_plus_q = irreducibleBZVectors.at(get_k_prime(kVec, qVec, signs_plus_q));
+            Eigen::Vector3d gammaZ_k_prime_minus_q = irreducibleBZVectors.at(get_k_prime(kVec, -qVec, signs_minus_q));
 
             for (Axis ax : std::vector<Axis>{X, Y, Z})
             {
@@ -432,7 +433,7 @@ void IrreducibleBZ::initCoefficients(const std::vector<CouplingParameter> &param
                 std::complex<double> gammaZJyymu = gammaPJyymu;
                 std::complex<double> gammaZJyxmu = gammaPJyxmu;
                 std::complex<double> gammaZJxymu = gammaPJxymu;
-                std::complex<double> gammaZJzzmu = J_kq(G_gammaZ(0) - qVec(0), G_gammaZ(1) - qVec(1), G_gammaZ(2) - qVec(2), qVec(0), qVec(1), qVec(2), parameters, Z, Z, ax);
+                std::complex<double> gammaZJzzmu = J_kq(-(kVec(0) - gammaZ_k_prime_plus_q(0)), -(kVec(1) - gammaZ_k_prime_plus_q(1)), -(kVec(2) - gammaZ_k_prime_plus_q(2)), qVec(0), qVec(1), qVec(2), parameters, Z, Z, ax);
 
                 // Coefficients for the gamma+, gamma-, and gammaZ terns with negative q
                 std::complex<double> gammaMJxxmu_negativeSign = J_kq(kVec(0), kVec(1), kVec(2), -qVec(0), -qVec(1), -qVec(2), parameters, X, X, ax);
@@ -449,7 +450,7 @@ void IrreducibleBZ::initCoefficients(const std::vector<CouplingParameter> &param
                 std::complex<double> gammaZJyymu_negativeSign = gammaPJyymu_negativeSign;
                 std::complex<double> gammaZJyxmu_negativeSign = gammaPJyxmu_negativeSign;
                 std::complex<double> gammaZJxymu_negativeSign = gammaPJxymu_negativeSign;
-                std::complex<double> gammaZJzzmu_negativeSign = J_kq(G_gammaZ(0) - qVec(0), G_gammaZ(1) - qVec(1), G_gammaZ(2) - qVec(2), -qVec(0), -qVec(1), -qVec(2), parameters, Z, Z, ax);
+                std::complex<double> gammaZJzzmu_negativeSign = J_kq(-(kVec(0) - gammaZ_k_prime_minus_q(0)), -(kVec(1) - gammaZ_k_prime_minus_q(1)), -(kVec(2) - gammaZ_k_prime_minus_q(2)), -qVec(0), -qVec(1), -qVec(2), parameters, Z, Z, ax);
 
                 for (int branch = 0; branch < 3; branch++)
                 {
@@ -490,17 +491,17 @@ void IrreducibleBZ::initCoefficients(const std::vector<CouplingParameter> &param
 // Apply the symmetries to the k' vector and possibly also the k and q vectors???
 Eigen::Vector3d IrreducibleBZ::getG_Z(const Eigen::Vector3d &kVec, const Eigen::Vector3d &qVec)
 {
-    int m = 3;
+    int indices[7] = {0, 1, -1, 2, -2};
 
     for (auto k_prime : irreducibleBZVectors)
     {
         for (auto k_p_trans : applySymmOp(k_prime))
         {
-            for (int i = -m; i <= m; i++)
+            for (int i : indices)
             {
-                for (int j = -m; j <= m; j++)
+                for (int j : indices)
                 {
-                    for (int k = -m; k <= m; k++)
+                    for (int k : indices)
                     {
                         Eigen::Vector3d G = i * Eigen::Vector3d(2 * pi, 0, 0) + j * Eigen::Vector3d(0, 2 * pi, 0) + k * Eigen::Vector3d(0, 0, 2 * pi);
                         if (distance(G, k_p_trans - kVec + qVec) < 0.0001)
@@ -519,21 +520,51 @@ Eigen::Vector3d IrreducibleBZ::getG_Z(const Eigen::Vector3d &kVec, const Eigen::
     return Eigen::Vector3d(0, 0, 0);
 }
 
+int IrreducibleBZ::get_k_prime(const Eigen::Vector3d &kVec, const Eigen::Vector3d &qVec, int signs[3])
+{
+    int indices[7] = {0, 1, -1, 2, -2};
+
+    for (int n = 0; n < irreducibleBZVectors.size(); n++)
+    {
+        for (auto k_p_trans : applySymmOp(irreducibleBZVectors.at(n)))
+        {
+            for (int i : indices)
+            {
+                for (int j : indices)
+                {
+                    for (int k : indices)
+                    {
+
+                        Eigen::Vector3d G = i * Eigen::Vector3d(2 * pi, 0, 0) + j * Eigen::Vector3d(0, 2 * pi, 0) + k * Eigen::Vector3d(0, 0, 2 * pi);
+                        if (distance(G, signs[0] * kVec + signs[1] * k_p_trans - signs[2] * qVec) < 0.0001)
+                        {
+                            // std::cout << "G " << G(0) / (2 * pi) << " " << G(1) / (2 * pi) << " " << G(2) / (2 * pi) << " | k_prime: " << k_p_trans(0) / (2 * pi) << " " << k_p_trans(1) / (2 * pi) << " " << k_p_trans(2) / (2 * pi) << std::endl;
+                            return n;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    std::cout << "Error: Could not find k_prime" << std::endl;
+    return -1;
+}
+
 // Find the reciprocal lattice vector G (in which basis?) that satisfies the condition G = -k - k' + q
 // Apply the symmetries to the k' vector and possibly also the k and q vectors???
 Eigen::Vector3d IrreducibleBZ::getG_gammaP(const Eigen::Vector3d &kVec, const Eigen::Vector3d &qVec)
 {
-    int m = 3;
+    int indices[7] = {0, 1, -1, 2, -2};
 
     for (auto k_prime : irreducibleBZVectors)
     {
         for (auto k_p_trans : applySymmOp(k_prime))
         {
-            for (int i = -m; i <= m; i++)
+            for (int i : indices)
             {
-                for (int j = -m; j <= m; j++)
+                for (int j : indices)
                 {
-                    for (int k = -m; k <= m; k++)
+                    for (int k : indices)
                     {
                         Eigen::Vector3d G = i * Eigen::Vector3d(2 * pi, 0, 0) + j * Eigen::Vector3d(0, 2 * pi, 0) + k * Eigen::Vector3d(0, 0, 2 * pi);
                         if (distance(G, -k_p_trans - kVec + qVec) < 0.01)
@@ -556,17 +587,17 @@ Eigen::Vector3d IrreducibleBZ::getG_gammaP(const Eigen::Vector3d &kVec, const Ei
 // Apply the symmetries to the k' vector and possibly also the k and q vectors???
 Eigen::Vector3d IrreducibleBZ::getG_gammaM(const Eigen::Vector3d &kVec, const Eigen::Vector3d &qVec)
 {
-    int m = 3;
+    int indices[7] = {0, 1, -1, 2, -2};
 
     for (auto k_prime : irreducibleBZVectors)
     {
         for (auto k_p_trans : applySymmOp(k_prime))
         {
-            for (int i = -m; i <= m; i++)
+            for (int i : indices)
             {
-                for (int j = -m; j <= m; j++)
+                for (int j : indices)
                 {
-                    for (int k = -m; k <= m; k++)
+                    for (int k : indices)
                     {
                         Eigen::Vector3d G = i * Eigen::Vector3d(2 * pi, 0, 0) + j * Eigen::Vector3d(0, 2 * pi, 0) + k * Eigen::Vector3d(0, 0, 2 * pi);
                         if (distance(G, k_p_trans + kVec + qVec) < 0.001)
@@ -708,43 +739,42 @@ void IrreducibleBZ::readCoefficients(std::string filename)
 
 double deltaDistrApprox(double x)
 {
-    double a = 2.8; // 2 < a <  a=5 -> way to much, a=2.2 -> basically always zero, a=3 -> energy escalates slowly
-    return 1.0 / (a * sqrt(pi)) * exp(-(x / a) * (x / a));
+    double a = 1; // 2 < a <  a=5 -> way to much, a=2.2 -> basically always zero, a=3 -> energy escalates slowly
+
+    if (std::abs(x) < a)
+    {
+        // std::cout << "x: " << x << std::endl;
+    }
+    return 1.0 / pi * exp(-(x / a) * (x / a)); /// (a * sqrt(pi))
 }
 
 void IrreducibleBZ::integrate()
 {
 
-    double tMax = 10;
-    double dt = 1E-4;
+    double tMax = 1E-3;
+    double dt = 1E-7;
     int nMax = int(tMax / dt);
 
-    std::vector<std::array<double, 3>> energiesPh(nMax);
-    std::vector<double> energiesMag(nMax);
-
     std::ofstream energy_file("Outputs/time_evolut_energies.txt");
+
+    // init the occupation for the next current step
+    std::vector<std::array<double, 3>> occNumPh_curr = phOccNumbers;
+    std::vector<double> occNumMag_curr = magOccNumbers;
 
     // Main integration loop over time
     for (int n = 0; n < nMax; n++)
     {
-
-        // init the new occupation for the next time step
-        std::vector<std::array<double, 3>> occNumPh_new(irreducibleBZVectors.size(), {0, 0, 0});
-        std::vector<double> occNumMag_new(irreducibleBZVectors.size(), 0);
-
         // Loop over all vectors in the irreducible BZ
         // #pragma omp parallel for
+
+        double sumPh[3] = {0, 0, 0};
+        double sumMag = 0;
+
         for (int vec_outer_idx = 0; vec_outer_idx < irreducibleBZVectors.size(); vec_outer_idx++)
         {
+            // std::cout << magOccNumbers.at(vec_outer_idx) << std::endl;
 
-            // Capture the occupation numbers at the current time in the main integration loop
-            double occNumPh_curr[3] = {phOccNumbers.at(vec_outer_idx)[0], phOccNumbers.at(vec_outer_idx)[1], phOccNumbers.at(vec_outer_idx)[2]};
-            double occNumMag_curr = magOccNumbers.at(vec_outer_idx);
-
-            // Calculate sum
-            double sumPh[3] = {0, 0, 0};
-            double sumMag = 0;
-
+            //  Calculate sum
             for (int branch = 0; branch < 3; branch++)
             {
 
@@ -757,29 +787,27 @@ void IrreducibleBZ::integrate()
 
                 // phonon
                 {
-                    double N_mk = magOccNumbers.at(vec_outer_idx);
-                    double n_k = phOccNumbers.at(vec_outer_idx)[branch];
+                    double N_mk = occNumMag_curr.at(vec_outer_idx);
+                    double n_k = occNumPh_curr.at(vec_outer_idx)[branch];
                     double deltaDistr = deltaDistrApprox(phDisp.at(vec_outer_idx).E[branch] - magDisp.at(vec_outer_idx).energy);
                     double M_minus_negSign = CGrid_negative_sign.at(vec_outer_idx)[branch].real();
                     double M_plus_posSign = DGrid_negative_sign.at(vec_outer_idx)[branch].real();
-                    sumPh[branch] += deltaDistr * (M_minus_negSign * N_mk * (n_k + 1) - M_plus_posSign * (N_mk + 1) * n_k);
+                    sumPh[branch] += 2 * pi * deltaDistr * (M_minus_negSign * N_mk * (n_k + 1) - M_plus_posSign * (N_mk + 1) * n_k);
                 }
                 // magnon
                 {
-                    double N_k = magOccNumbers.at(vec_outer_idx);
-                    double n_mk = phOccNumbers.at(vec_outer_idx)[branch];
+                    double N_k = occNumMag_curr.at(vec_outer_idx);
+                    double n_mk = occNumPh_curr.at(vec_outer_idx)[branch];
                     double deltaDistr = deltaDistrApprox(phDisp.at(vec_outer_idx).E[branch] - magDisp.at(vec_outer_idx).energy);
                     double M_plus_negSign = DGrid.at(vec_outer_idx)[branch].real();
                     double M_minus_posSign = CGrid.at(vec_outer_idx)[branch].real();
-                    sumMag += deltaDistr * (M_plus_negSign * (N_k + 1) * n_mk - M_minus_posSign * N_k * (n_mk + 1));
+                    sumMag += 2 * pi * deltaDistr * (M_plus_negSign * (N_k + 1) * n_mk - M_minus_posSign * N_k * (n_mk + 1));
                 }
 
                 // SECOND ORDER IN MAGNON VARIABLES
                 // INNER LOOP over all vectors in the irreducible BZ
                 for (int vec_inner_idx = 0; vec_inner_idx < irreducibleBZVectors.size(); vec_inner_idx++)
                 {
-                    double N_k = magOccNumbers.at(vec_inner_idx);
-
                     // multiplicities for the inner loop over the irr BZ
                     double m = multiplicities.at(vec_inner_idx);
 
@@ -788,35 +816,48 @@ void IrreducibleBZ::integrate()
                         // handle terms with gamma minus and -q
                         {
                             int rep_index_k_prime = k_prime_representatives_gammaM_plus_q[vec_inner_idx][vec_outer_idx];
-                            double N_k_prime = magOccNumbers.at(rep_index_k_prime);
+                            double N_k_prime = occNumMag_curr.at(rep_index_k_prime);
                             double deltaDistr = deltaDistrApprox(phDisp.at(vec_outer_idx).E[branch] - magDisp.at(vec_inner_idx).energy - magDisp.at(rep_index_k_prime).energy);
+                            double n_q = occNumPh_curr.at(vec_outer_idx)[branch];
+                            double N_k = occNumMag_curr.at(vec_inner_idx);
+                            double m_k_prime = multiplicities.at(rep_index_k_prime);
 
-                            sumPh[branch] += m * (occNumPh_curr[branch] + 1) * gammaMinusGrid_negativeSign[vec_inner_idx][vec_outer_idx][branch].real() * N_k * N_k_prime * deltaDistr;
+                            sumPh[branch] += 2 * pi * m * m_k_prime * (n_q + 1) * gammaMinusGrid_negativeSign[vec_inner_idx][vec_outer_idx][branch].real() * N_k * N_k_prime * deltaDistr;
                         }
                         // handle terms with gamma z and -q
                         {
                             int rep_index_k_prime = k_prime_representatives_gammaZ_minus_q[vec_inner_idx][vec_outer_idx];
-                            double N_k_prime = magOccNumbers.at(rep_index_k_prime);
+                            double N_k_prime = occNumMag_curr.at(rep_index_k_prime);
                             double deltaDistr = deltaDistrApprox(phDisp.at(vec_outer_idx).E[branch] + magDisp.at(vec_inner_idx).energy - magDisp.at(rep_index_k_prime).energy);
+                            double n_q = occNumPh_curr.at(vec_outer_idx)[branch];
+                            double N_k = occNumMag_curr.at(vec_inner_idx);
+                            double m_k_prime = multiplicities.at(rep_index_k_prime);
 
-                            sumPh[branch] += m * (occNumPh_curr[branch] + 1) * gammaZGrid_negativeSign[vec_inner_idx][vec_outer_idx][branch].real() * (N_k + 1) * N_k_prime * deltaDistr;
+                            sumPh[branch] += 2 * pi * m * m_k_prime * (n_q + 1) * gammaZGrid_negativeSign[vec_inner_idx][vec_outer_idx][branch].real() * (N_k + 1) * N_k_prime * deltaDistr;
                         }
                         // handle terms with gamma P and +q
                         {
                             int rep_index_k_prime = k_prime_representatives_gammaP_plus_q[vec_inner_idx][vec_outer_idx];
-                            double N_k_prime = magOccNumbers.at(rep_index_k_prime);
+                            double N_k_prime = occNumMag_curr.at(rep_index_k_prime);
                             double deltaDistr = deltaDistrApprox(-phDisp.at(vec_outer_idx).E[branch] + magDisp.at(vec_inner_idx).energy + magDisp.at(rep_index_k_prime).energy);
+                            double n_q = occNumPh_curr.at(vec_outer_idx)[branch];
+                            double N_k = occNumMag_curr.at(vec_inner_idx);
+                            double m_k_prime = multiplicities.at(rep_index_k_prime);
 
-                            sumPh[branch] -= m * (occNumPh_curr[branch]) * gammaPlusGrid[vec_inner_idx][vec_outer_idx][branch].real() * (N_k + 1) * (N_k_prime + 1) * deltaDistr;
+                            sumPh[branch] -= 2 * pi * m * m_k_prime * n_q * gammaPlusGrid[vec_inner_idx][vec_outer_idx][branch].real() * (N_k + 1) * (N_k_prime + 1) * deltaDistr;
                         }
 
                         // handle terms with gamma Z and +q
                         {
                             int rep_index_k_prime = k_prime_representatives_gammaZ_minus_q[vec_inner_idx][vec_outer_idx];
-                            double N_k_prime = magOccNumbers.at(rep_index_k_prime);
+                            double N_k_prime = occNumMag_curr.at(rep_index_k_prime);
+                            double n_k = occNumPh_curr.at(vec_outer_idx)[branch];
+                            double N_k = occNumMag_curr.at(vec_inner_idx);
+                            double m_k_prime = multiplicities.at(rep_index_k_prime);
+
                             double deltaDistrGammaZ = deltaDistrApprox(-phDisp.at(vec_outer_idx).E[branch] + magDisp.at(vec_inner_idx).energy - magDisp.at(rep_index_k_prime).energy);
 
-                            sumPh[branch] -= m * (occNumPh_curr[branch]) * gammaZGrid[vec_inner_idx][vec_outer_idx][branch].real() * (N_k + 1) * (N_k_prime)*deltaDistrGammaZ;
+                            sumPh[branch] -= 2 * pi * m * m_k_prime * n_k * gammaZGrid[vec_inner_idx][vec_outer_idx][branch].real() * (N_k + 1) * N_k_prime * deltaDistrGammaZ;
                         }
                     }
 
@@ -825,62 +866,59 @@ void IrreducibleBZ::integrate()
                         // positive gammaP term
                         {
                             int rep_index_k_prime = k_prime_representatives_gammaP_plus_q[vec_outer_idx][vec_inner_idx];
-                            double N_k_prime = magOccNumbers.at(rep_index_k_prime);
+                            double N_k_prime = occNumMag_curr.at(rep_index_k_prime);
                             double deltaDistr = deltaDistrApprox(magDisp.at(vec_outer_idx).energy + magDisp.at(rep_index_k_prime).energy - phDisp.at(vec_inner_idx).E[branch]);
-                            sumMag += m * (occNumMag_curr + 1) * 2 * gammaPlusGrid[vec_outer_idx][vec_inner_idx][branch].real() * (N_k_prime + 1) * phOccNumbers.at(vec_inner_idx)[branch] * deltaDistr;
+                            double N_k = occNumMag_curr.at(vec_outer_idx);
+                            double n_q = occNumPh_curr.at(vec_inner_idx)[branch];
+                            double m_k_prime = multiplicities.at(rep_index_k_prime);
+
+                            sumMag += 2 * pi * m * m_k_prime * (N_k + 1) * 2 * gammaPlusGrid[vec_outer_idx][vec_inner_idx][branch].real() * (N_k_prime + 1) * n_q * deltaDistr;
                         }
                         // positive gammaZ term
                         {
                             int rep_index_k_prime = k_prime_representatives_gammaZ_plus_q[vec_outer_idx][vec_inner_idx];
-                            double N_k_prime = magOccNumbers.at(rep_index_k_prime);
+                            double N_k_prime = occNumMag_curr.at(rep_index_k_prime);
                             double deltaDistr_pmm = deltaDistrApprox(magDisp.at(vec_outer_idx).energy - magDisp.at(rep_index_k_prime).energy - phDisp.at(vec_inner_idx).E[branch]);
                             double deltaDistr_pmp = deltaDistrApprox(magDisp.at(vec_outer_idx).energy - magDisp.at(rep_index_k_prime).energy + phDisp.at(vec_inner_idx).E[branch]);
-                            double n_qv = phOccNumbers.at(vec_inner_idx)[branch];
+                            double n_qv = occNumPh_curr.at(vec_inner_idx)[branch];
+                            double N_k = occNumMag_curr.at(vec_outer_idx);
                             double n_mqv = n_qv; // phOccNumbers.at(findRepresentative(-irreducibleBZVectors.at(vec_inner_idx)))[branch];
+                            double m_k_prime = multiplicities.at(rep_index_k_prime);
 
-                            sumMag += m * (occNumMag_curr + 1) * N_k_prime * (n_qv * deltaDistr_pmm + (n_mqv + 1) * deltaDistr_pmp) * gammaZGrid[vec_outer_idx][vec_inner_idx][branch].real();
+                            sumMag += 2 * pi * m * m_k_prime * (N_k + 1) * N_k_prime * (n_qv * deltaDistr_pmm + (n_mqv + 1) * deltaDistr_pmp) * gammaZGrid[vec_outer_idx][vec_inner_idx][branch].real();
                         }
-
                         // negative gammaM term
                         {
                             int rep_index_k_prime = k_prime_representatives_gammaM_plus_q[vec_outer_idx][vec_inner_idx];
                             double N_k_prime = magOccNumbers.at(rep_index_k_prime);
-                            double n_mqv = phOccNumbers.at(vec_inner_idx)[branch]; // phOccNumbers.at(findRepresentative(-irreducibleBZVectors.at(vec_inner_idx)))[branch];
+                            double n_mqv = occNumPh_curr.at(vec_inner_idx)[branch]; // phOccNumbers.at(findRepresentative(-irreducibleBZVectors.at(vec_inner_idx)))[branch];
                             double deltaDistr = deltaDistrApprox(-magDisp.at(vec_outer_idx).energy - magDisp.at(rep_index_k_prime).energy + phDisp.at(vec_inner_idx).E[branch]);
+                            double N_k = occNumMag_curr.at(vec_outer_idx);
+                            // std::cout << rep_index_k_prime << " " << N_k_prime << " " << n_mqv << " " << deltaDistr << gammaMinusGrid[vec_outer_idx][vec_inner_idx][branch].real() << " " << m << " " << occNumMag_curr << " " << m << "\n " << std::endl;
+                            double m_k_prime = multiplicities.at(rep_index_k_prime);
 
-                            sumMag -= m * occNumMag_curr * 2 * gammaMinusGrid[vec_outer_idx][vec_inner_idx][branch].real() * N_k_prime * (n_mqv + 1) * deltaDistr;
+                            sumMag -= 2 * pi * m * m_k_prime * N_k * 2 * gammaMinusGrid[vec_outer_idx][vec_inner_idx][branch].real() * N_k_prime * (n_mqv + 1) * deltaDistr;
                         }
-
                         // negative gammaZ term
                         {
                             int rep_index_k_prime = k_prime_representatives_gammaZ_plus_q[vec_outer_idx][vec_inner_idx];
-                            double N_k_prime = magOccNumbers.at(rep_index_k_prime);
+                            double N_k_prime = occNumMag_curr.at(rep_index_k_prime);
                             double deltaDistr_mpm = deltaDistrApprox(-magDisp.at(vec_outer_idx).energy + magDisp.at(rep_index_k_prime).energy - phDisp.at(vec_inner_idx).E[branch]);
                             double deltaDistr_mpp = deltaDistrApprox(-magDisp.at(vec_outer_idx).energy + magDisp.at(rep_index_k_prime).energy + phDisp.at(vec_inner_idx).E[branch]);
-                            double n_qv = phOccNumbers.at(vec_inner_idx)[branch];
+                            double n_qv = occNumPh_curr.at(vec_inner_idx)[branch];
                             double n_mqv = n_qv; // phOccNumbers.at(findRepresentative(-irreducibleBZVectors.at(vec_inner_idx)))[branch];
+                            double N_k = occNumMag_curr.at(vec_outer_idx);
+                            double m_k_prime = multiplicities.at(rep_index_k_prime);
 
-                            sumMag -= m * occNumMag_curr * gammaZGrid[vec_outer_idx][vec_inner_idx][branch].real() * (N_k_prime + 1) * (n_qv * deltaDistr_mpm + (n_mqv + 1) * deltaDistr_mpp);
+                            sumMag -= 2 * pi * m * m_k_prime * N_k * gammaZGrid[vec_outer_idx][vec_inner_idx][branch].real() * (N_k_prime + 1) * (n_qv * deltaDistr_mpm + (n_mqv + 1) * deltaDistr_mpp);
                         }
                     }
                 }
-
-                // Multiply with common prefactor and fix units
-                for (int branch = 0; branch < 3; branch++)
-                {
-                    sumPh[branch] *= 2 * pi;
-                }
-                sumMag *= 2 * pi;
             }
-            // assign values the new occupation numbers
-            occNumMag_new.at(vec_outer_idx) = occNumMag_curr + dt * sumMag;
-            for (int branch = 0; branch < 3; branch++)
-            {
-                occNumPh_new.at(vec_outer_idx)[branch] = occNumPh_curr[branch] + dt * sumPh[branch];
-            }
-            // std::cout << sumMag << std::endl;
-            // std::cout << sumPh[0] << " " << sumPh[1] << " " << sumPh[2] << std::endl;
         }
+
+        // std::cout << "sumMag " << sumMag << std::endl;
+        // std::cout << "sumPh " << sumPh[0] << " " << sumPh[1] << " " << sumPh[2] << std::endl;
 
         // calculate the total energy
         double magEnergy = 0;
@@ -888,8 +926,8 @@ void IrreducibleBZ::integrate()
         double totalEnergy = 0;
         for (int i = 0; i < irreducibleBZVectors.size(); i++)
         {
-            magEnergy += multiplicities.at(i) * magOccNumbers.at(i) * magDisp.at(i).energy;
-            phEnergy += multiplicities.at(i) * (phOccNumbers.at(i)[0] * phDisp.at(i).E[0] + phOccNumbers.at(i)[1] * phDisp.at(i).E[1] + phOccNumbers.at(i)[2] * phDisp.at(i).E[2]);
+            magEnergy += multiplicities.at(i) * occNumMag_curr.at(i) * magDisp.at(i).energy;
+            phEnergy += multiplicities.at(i) * (occNumPh_curr.at(i)[0] * phDisp.at(i).E[0] + occNumPh_curr.at(i)[1] * phDisp.at(i).E[1] + occNumPh_curr.at(i)[2] * phDisp.at(i).E[2]);
         }
         totalEnergy = magEnergy + phEnergy;
 
@@ -899,22 +937,28 @@ void IrreducibleBZ::integrate()
             std::cout << "Progress: " << double(n) / nMax << std::endl;
         }
 
-        if (n % 10 == 0)
+        if (n % 1 == 0)
         {
             // write energy to file
             energy_file << n * dt << " " << magEnergy << " " << phEnergy << " " << totalEnergy << " ";
 
             for (int i = 0; i < irreducibleBZVectors.size(); i++)
             {
-                energy_file << magOccNumbers.at(i) << " " << phOccNumbers.at(i)[0] << " " << phOccNumbers.at(i)[1] << " " << phOccNumbers.at(i)[2] << " ";
+                energy_file << occNumMag_curr.at(i) << " " << occNumPh_curr.at(i)[0] << " " << occNumPh_curr.at(i)[1] << " " << occNumPh_curr.at(i)[2] << " ";
             }
 
             energy_file << "\n";
         }
 
-        // Update occupation numbers
-        magOccNumbers = occNumMag_new;
-        phOccNumbers = occNumPh_new;
+        // Finally, update the occupation numbers
+        for (int i = 0; i < irreducibleBZVectors.size(); i++)
+        {
+            occNumMag_curr.at(i) = occNumMag_curr.at(i) + dt * sumMag;
+            for (int branch : {0, 1, 2})
+            {
+                occNumPh_curr.at(i)[branch] = occNumPh_curr.at(i)[branch] + dt * sumPh[branch];
+            }
+        }
     }
     energy_file.close();
 }
@@ -922,7 +966,8 @@ void IrreducibleBZ::integrate()
 void IrreducibleBZ::init_k_prime()
 {
 
-    // init all possible rec lattice vectors
+    /*
+        // init all possible rec lattice vectors
     std::vector<std::vector<Eigen::Vector3d>> G_gammaM_minus_q = std::vector(irreducibleBZVectors.size(), std::vector<Eigen::Vector3d>(irreducibleBZVectors.size()));
     std::vector<std::vector<Eigen::Vector3d>> G_gammaZ_minus_q = std::vector(irreducibleBZVectors.size(), std::vector<Eigen::Vector3d>(irreducibleBZVectors.size()));
     std::vector<std::vector<Eigen::Vector3d>> G_gammaP_minus_q = std::vector(irreducibleBZVectors.size(), std::vector<Eigen::Vector3d>(irreducibleBZVectors.size()));
@@ -987,7 +1032,86 @@ void IrreducibleBZ::init_k_prime()
         }
     }
 
+    */
+
+    k_prime_representatives_gammaM_minus_q = std::vector(irreducibleBZVectors.size(), std::vector<int>(irreducibleBZVectors.size()));
+    k_prime_representatives_gammaZ_minus_q = std::vector(irreducibleBZVectors.size(), std::vector<int>(irreducibleBZVectors.size()));
+    k_prime_representatives_gammaP_minus_q = std::vector(irreducibleBZVectors.size(), std::vector<int>(irreducibleBZVectors.size()));
+
+    k_prime_representatives_gammaM_plus_q = std::vector(irreducibleBZVectors.size(), std::vector<int>(irreducibleBZVectors.size()));
+    k_prime_representatives_gammaZ_plus_q = std::vector(irreducibleBZVectors.size(), std::vector<int>(irreducibleBZVectors.size()));
+    k_prime_representatives_gammaP_plus_q = std::vector(irreducibleBZVectors.size(), std::vector<int>(irreducibleBZVectors.size()));
+
+    int sign_GammaM_plus_q[3] = {1, 1, 1};
+    int sign_GammaP_plus_q[3] = {-1, -1, 1};
+    int sign_GammaZ_plus_q[3] = {-1, 1, 1};
+    int sign_GammaM_minus_q[3] = {1, 1, -1};
+    int sign_GammaP_minus_q[3] = {-1, -1, -1};
+    int sign_GammaZ_minus_q[3] = {-1, 1, -1};
+
+#pragma omp parallel for
+    for (int i = 0; i < irreducibleBZVectors.size(); i++)
+    {
+        for (int j = 0; j < irreducibleBZVectors.size(); j++)
+        {
+            auto k = irreducibleBZVectors.at(i);
+            auto q = irreducibleBZVectors.at(j);
+
+            k_prime_representatives_gammaM_minus_q[i][j] = get_k_prime(k, -q, sign_GammaM_minus_q);
+            k_prime_representatives_gammaZ_minus_q[i][j] = get_k_prime(k, -q, sign_GammaZ_minus_q);
+            k_prime_representatives_gammaP_minus_q[i][j] = get_k_prime(k, -q, sign_GammaP_minus_q);
+            k_prime_representatives_gammaM_plus_q[i][j] = get_k_prime(k, q, sign_GammaM_plus_q);
+            k_prime_representatives_gammaZ_plus_q[i][j] = get_k_prime(k, q, sign_GammaZ_plus_q);
+            k_prime_representatives_gammaP_plus_q[i][j] = get_k_prime(k, q, sign_GammaP_plus_q);
+        }
+    }
+
     std::cout << "initialized k_prime vectors" << std::endl;
+}
+
+void IrreducibleBZ::save_k_primes_to_file(std::string filename)
+{
+    std::ofstream file(filename);
+    if (!file.is_open())
+    {
+        throw std::runtime_error("Error: Could not open file " + filename);
+    }
+    for (int i = 0; i < irreducibleBZVectors.size(); i++)
+    {
+        for (int j = 0; j < irreducibleBZVectors.size(); j++)
+        {
+            file << i << " " << j << " " << k_prime_representatives_gammaM_minus_q[i][j] << " " << k_prime_representatives_gammaZ_minus_q[i][j] << " " << k_prime_representatives_gammaP_minus_q[i][j] << " " << k_prime_representatives_gammaM_plus_q[i][j] << " " << k_prime_representatives_gammaZ_plus_q[i][j] << " " << k_prime_representatives_gammaP_plus_q[i][j] << "\n";
+        }
+    }
+    file.close();
+}
+
+void IrreducibleBZ::init_k_primes_from_file(std::string filename)
+{
+    k_prime_representatives_gammaM_minus_q = std::vector(irreducibleBZVectors.size(), std::vector<int>(irreducibleBZVectors.size()));
+    k_prime_representatives_gammaZ_minus_q = std::vector(irreducibleBZVectors.size(), std::vector<int>(irreducibleBZVectors.size()));
+    k_prime_representatives_gammaP_minus_q = std::vector(irreducibleBZVectors.size(), std::vector<int>(irreducibleBZVectors.size()));
+    k_prime_representatives_gammaP_plus_q = std::vector(irreducibleBZVectors.size(), std::vector<int>(irreducibleBZVectors.size()));
+    k_prime_representatives_gammaZ_plus_q = std::vector(irreducibleBZVectors.size(), std::vector<int>(irreducibleBZVectors.size()));
+    k_prime_representatives_gammaM_plus_q = std::vector(irreducibleBZVectors.size(), std::vector<int>(irreducibleBZVectors.size()));
+
+    std::ifstream file(filename);
+    if (!file.is_open())
+    {
+        throw std::runtime_error("Error: Could not open file " + filename);
+    }
+
+    while (!file.eof())
+    {
+        int i, j, k_prime_gammaM_minus_q, k_prime_gammaZ_minus_q, k_prime_gammaP_minus_q, k_prime_gammaM_plus_q, k_prime_gammaZ_plus_q, k_prime_gammaP_plus_q;
+        file >> i >> j >> k_prime_gammaM_minus_q >> k_prime_gammaZ_minus_q >> k_prime_gammaP_minus_q >> k_prime_gammaM_plus_q >> k_prime_gammaZ_plus_q >> k_prime_gammaP_plus_q;
+        k_prime_representatives_gammaM_minus_q[i][j] = k_prime_gammaM_minus_q;
+        k_prime_representatives_gammaZ_minus_q[i][j] = k_prime_gammaZ_minus_q;
+        k_prime_representatives_gammaP_minus_q[i][j] = k_prime_gammaP_minus_q;
+        k_prime_representatives_gammaM_plus_q[i][j] = k_prime_gammaM_plus_q;
+        k_prime_representatives_gammaZ_plus_q[i][j] = k_prime_gammaZ_plus_q;
+        k_prime_representatives_gammaP_plus_q[i][j] = k_prime_gammaP_plus_q;
+    }
 }
 
 // given a line with a symmetry operatation e.g. "+x,-y,z" return a function that applies this operation to a vector

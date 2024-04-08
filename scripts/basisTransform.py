@@ -16,8 +16,6 @@ file_path = 'Parameters/symmetrieMatrices.txt'
 matrices = read_symmetry_matrices(file_path)
 
 
-
-
 # basis of quantum espresso output
 a1 = [2*np.pi, 0, 0]
 a2 = [0, 2*np.pi, 0]

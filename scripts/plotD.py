@@ -4,6 +4,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import re
 import matplotlib
 
+
 # Enable LaTeX text rendering globally
 plt.rcParams['text.usetex'] = True
 plt.rcParams['text.latex.preamble'] = r'\usepackage{amsmath} \usepackage{amsfonts}'
@@ -151,8 +152,11 @@ plt.clf()
 ## ... plotting code here
 #theme.apply_transforms()
 
-plt.style.use("seaborn-v0_8-bright")
+#plt.style.use("seaborn-v0_8-bright")
 
+import scienceplots
+
+plt.style.use('science')
 
 #plt.plot(x, [Dx-Dy for Dx, Dy in zip(xx,yx)])
 #plt.plot(x, [Dx-Dy for Dx, Dy in zip(yx,yy)])
@@ -220,9 +224,26 @@ axs[1][3].set_xticks([0,1], [r'$\Gamma$', '$P$'])
 axs[1][4].set_xticks([0,1], ['$P$', '$H$'])
 axs[1][5].set_xticks([0,1], ['$P$', '$N$'])
 
+axs[0][0].set_xticks([0,1], labels=['',''])
+axs[0][1].set_xticks([0,1], labels=['',''])
+axs[0][2].set_xticks([0,1], labels=['',''])
+axs[0][3].set_xticks([0,1], labels=['',''])
+axs[0][4].set_xticks([0,1], labels=['',''])
+axs[0][5].set_xticks([0,1], labels=['',''])
+
+
 axs[0][0].set_yticks([0,5])
 axs[1][0].set_yticks([-5,0])
-
+axs[0][1].set_yticks([0,5], labels=['',''])
+axs[1][1].set_yticks([-5,0], labels=['',''])
+axs[0][2].set_yticks([0,5], labels=['',''])
+axs[1][2].set_yticks([-5,0], labels=['',''])
+axs[0][3].set_yticks([0,5], labels=['',''])
+axs[1][3].set_yticks([-5,0], labels=['',''])
+axs[0][4].set_yticks([0,5], labels=['',''])
+axs[1][4].set_yticks([-5,0], labels=['',''])
+axs[0][5].set_yticks([0,5], labels=['',''])
+axs[1][5].set_yticks([-5,0], labels=['',''])
 
 
 
@@ -232,11 +253,14 @@ axs[1][0].set_yticks([-5,0])
 #axs[0][0].set_ylim([-4E-6,5E-6])
 #axs[1][0].set_ylim([-4E-6,5E-6])
 
-axs[0][0].set_ylabel(r'$\mathrm{Re}\mathcal{D}^{x\mu}_\mathbf{k}$')
-axs[1][0].set_ylabel(r'$\mathrm{Re}\mathcal{D}^{y\mu}_\mathbf{k}$')
 
 
-axs[0][5].legend(title=r'$\mu$')
 
-#plt.savefig('scripts/Figures/ImD_bccFe.pdf')
+axs[0][0].set_ylabel(r'$\mathrm{Im}\mathcal{D}^{x\mu}_\mathbf{k}$')
+axs[1][0].set_ylabel(r'$\mathrm{Im}\mathcal{D}^{y\mu}_\mathbf{k}$')
+
+
+axs[0][5].legend(title=r'Axis $\mu$')
+
+plt.savefig('scripts/Figures/ImD_bccFe.pdf')
 plt.show()

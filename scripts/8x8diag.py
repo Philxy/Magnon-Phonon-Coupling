@@ -6,8 +6,8 @@ from util import Power, Sqrt
 
 
 # Enable LaTeX text rendering globally
-plt.rcParams['text.usetex'] = True
-plt.rcParams['text.latex.preamble'] = r'\usepackage{amsmath} \usepackage{amsfonts}'
+#plt.rcParams['text.usetex'] = True
+#plt.rcParams['text.latex.preamble'] = r'\usepackage{amsmath} \usepackage{amsfonts}'
 
 
 def wP(AA, BB, CC, DD):
@@ -47,7 +47,7 @@ def retrieve_data_from_file(file_path):
     return rest
 
 
-filename8x8 = "Outputs/4x4x4Eigenenergies.txt"
+filename8x8 = "Outputs/gH_20000_6x6x6/Eigenenergies.txt"
 filename_ph = "Outputs/numbersPh_20x20x20.txt"
 filename_mag = "Outputs/numbersJIso_20x20.txt"
 
@@ -56,12 +56,13 @@ eigenenergies = retrieve_data_from_file(filename8x8)
 #eigenenergies_ph = retrieve_data_from_file(filename_ph)[1]
 #eigenenergies_mag = retrieve_data_from_file(filename_mag)[1]
 
-'''
-CDs = retrieve_data_from_file("Outputs/4x4x4CD.txt")
-S_matrix = retrieve_data_from_file("Outputs/4x4x4EVec.txt")
 
-Cs = [C[:3] for C in CDs[1]]
-Ds = [D[3:] for D in CDs[1]]
+CDs = retrieve_data_from_file("Outputs/gH_20000_6x6x6/CD.txt")
+S_matrix = retrieve_data_from_file("Outputs/gH_20000_6x6x6/EVec.txt")
+
+
+Cs = [C[:3] for C in CDs]
+Ds = [D[3:] for D in CDs]
 
 
 C1_real,C2_real,C3_real = [np.abs(c[0].real) for c in Cs], [np.abs(c[1].real) for c in Cs], [np.abs(c[2].real) for c in Cs]
@@ -90,7 +91,7 @@ x_Ds = np.linspace(0,1,len(Ds))
 #plt.clf()
 #
 #exit()
-'''
+
 
 #x_ph = np.linspace(0,1,len(eigenenergies_ph))
 #y_ph1 = [ ev[0] for ev in eigenenergies_ph]
@@ -113,21 +114,121 @@ for branch in [0,1,2]:
     #plt.scatter(x_coupl, wmY, s=1, color='black')
 """
 
-for en in eigenenergies:
-    print(en)
+S_inv_matrices = [np.linalg.inv(np.array(S_matrix[i]).reshape(8,8)) for i in range(len(S_matrix))]
+S_matrices = [np.array(S_matrix[i]).reshape(8,8) for i in range(len(S_matrix))]
+
 
 for i in range(8):
     y_coupl =  [ np.abs(ev[i]) for ev in eigenenergies]
-    #art_der_teilchen = [ np.abs(line[i+8*7]) for line in S_matrix[1]] # work kind of
-    #art_der_teilchen = [ np.abs(line[i+8*i]) for line in S_matrix[1]]
+    #art_der_teilchen = [ np.abs(line[i+8*7]) for line in S_matrix] # work kind of
+    #art_der_teilchen = [ np.abs(line[i+i*8]) for line in S_matrix] # work kind of
 
-    plt.scatter(x_coupl,y_coupl, s=1) #
+    #art_der_teilchen = [ np.abs(line[i+8*i]) for line in S_matrix]
+
+
+    plt.scatter(x_coupl,y_coupl, s=1.4) #
 
 plt.ylabel(r'\text{dispersion relation (meV)}')
-plt.savefig('scripts/Figures/8x8diag.pdf', dpi= 1000)
+#plt.savefig('scripts/Figures/8x8diag.pdf', dpi= 1000)
+#plt.show()
+plt.clf()
+it = range(8)
+
+import pandas as pd
+import scienceplots
+
+plt.style.use('science')
+
+plt.figure(figsize=(10/2.52,6/2.52))
+
+min, max = +np.inf, -np.inf
+
+for i in it:
+    for j in it:
+        art_der_teilchen = [(np.absolute(S_inv[i][j].imag))**2 for S_inv in S_inv_matrices]
+        curr_max = np.max(art_der_teilchen)
+        curr_min = np.min(art_der_teilchen)
+        if curr_max > max:
+            max = curr_max
+        if curr_min < min:
+            min = curr_min
+
+        if  j == 7 and (i != 6 and i != 7):
+            n = 1
+            plt.scatter(x_coupl[::n], art_der_teilchen[::n], c=art_der_teilchen[::n], cmap='rainbow', s=1.4)
+
+cb = plt.colorbar() #orientation='horizontal', location='top', pad=0.003
+
+
+cb.set_ticks([0,1])
+cb.set_ticklabels([r'$\mathrm{phonon-like}$',r'$\mathrm{magnon-like}$'])
+
+plt.xlim(0.015,0.095)
+plt.ylabel('transformation matrix elements')
+plt.tight_layout()
+plt.savefig('scripts/Figures/8x8diag_transformation_matrix_elements.png', dpi=600)
 plt.show()
 plt.clf()
 
+print(min,max)
+
+cmap = plt.get_cmap('rainbow')
+norm = plt.Normalize(vmin=min*0.99, vmax=max*1.00)
+
+
+for j in it:
+    art_der_teilchen = []
+
+    for i in it:
+        y_coupl =  [ np.abs(ev[i]) for ev in eigenenergies]
+
+
+        #art_der_teilchen = [ np.abs(line[i+j*8]) for line in S_matrix]
+
+        art_der_teilchen = [(np.absolute(S_inv[i][j].imag))**2 for S_inv in S_inv_matrices]
+        #art_der_teilchen = [np.abs(S[j][i]) for S in S_matrices]
+
+        data_series = pd.Series(art_der_teilchen, index=x_coupl)
+
+        # Apply a simple moving average with a window of 5
+        smooth_data = data_series.rolling(window=1).mean()
+
+
+        plt.scatter(x_coupl, y_coupl, s=4, c=smooth_data, cmap=cmap, norm=norm) #RdYlBu
+
+
+    #plt.savefig("scripts/Figures/Cmaps/" + str(j) + ".png")
+
+    if  j == 7:
+
+        plt.ylabel('dispersion relation (meV)')
+        plt.xticks(ticks=[0,1], labels=[r'$\Gamma$', r'$H$'])
+        plt.tight_layout()
+        plt.show()
+
+
+    plt.clf()
+
+exit()
+x_min, x_max = 0.04, 0.08
+
+for j in it:
+    for i in it:
+        y_coupl = [np.abs(ev[i]) for ev in eigenenergies]
+        art_der_teilchen = [np.absolute(S_inv[i][j]) for S_inv in S_inv_matrices]
+        data_series = pd.Series(art_der_teilchen, index=x_coupl)
+
+        # Apply smoothing only within the specified x-axis segment
+        smooth_data = data_series.copy()  # Start with a copy of the original series
+        segment_mask = (data_series.index >= x_min) & (data_series.index <= x_max)
+        smooth_data[segment_mask] = data_series[segment_mask].rolling(window=10, min_periods=1).mean()
+
+        plt.scatter(x_coupl, y_coupl, s=4, c=smooth_data, cmap=cmap, norm=norm)
+
+    if j == 7:
+        plt.show()
+
+    plt.clf()
 
 
 exit()

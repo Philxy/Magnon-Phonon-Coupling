@@ -88,7 +88,7 @@ ein_mRy_durch_hbar_in_THz = 20.67068666810
 
 #axs.plot(x[:split],[J.real for J in dataJ][:split],linewidth=2.5) # plot in mRy
 #axs.plot(x[:split],[J.real*ein_mRy_durch_hbar_in_THz for J in dataJ][:split],linewidth=2.5) #plot in THz
-axs.plot(x[:split],[J.real*ein_mRy_in_meV for J in dataJ][:split],linewidth=2.5) #plot in meV
+axs.plot(x[:split],[2/1.1 *J.real*ein_mRy_in_meV for J in dataJ][:split],linewidth=2.5) #plot in meV
 
 labels = [r'$\Gamma$', '$H$', '$N$', r'$\Gamma$', '$P$', '$H$']
 

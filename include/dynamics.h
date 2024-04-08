@@ -67,17 +67,21 @@ struct IrreducibleBZ
 
     SymmetrieGroup symmetryGroup; // symmetry group
 
-    void init(std::string irreducibleBZFile); // initializes the irreducible BZ vectors
+    void init(std::string irreducibleBZFile);                                            // initializes the irreducible BZ vectors
     void initMagnonDisp(std::string couplingParameterFile);                              // initializes the magnon dispersion
     void initPhononDisp(std::string dynamicMatricesFile, std::string nextNeighbourFile); // initializes the phonon dispersion by doing the diagonalization
 
     // initializes the magnon and phonon dispersion from files
     void initMagnonPhononDispFromFile(std::string filepathPh, std::string filepathMag, std::string magnonDispOutputPath);
 
-    void initOccNumbers(double thermalEnergyPh, double thermalEnergyMag);                                                            // initializes the occupation numbers
+    void initOccNumbers(double thermalEnergyPh, double thermalEnergyMag);             // initializes the occupation numbers
     void initCoefficients(const std::vector<CouplingParameter> &parameters, int ftN); // initializes the coefficients
     void readMultiplicities(const std::string &filename);                             // retrieves the multiplicities from a file
     void init_k_prime();
+    void save_k_primes_to_file(std::string filename);
+    void init_k_primes_from_file(std::string filename);
+
+    int get_k_prime(const Eigen::Vector3d &kVec, const Eigen::Vector3d &qVec, int signs[3]);
 
     int findRepresentative(const Eigen::Vector3d &kVec); // returns the index of the representative in the irreducibleBZVectors vector
     Eigen::Vector3d findClosestVector(const Eigen::Vector3d &kVec);
@@ -92,15 +96,11 @@ struct IrreducibleBZ
 
     void integrate();
 
-
     std::vector<std::function<Eigen::Vector3d(Eigen::Vector3d)>> operations;
 
     void initSymmOp(std::string filepath);
-    
+
     std::vector<Eigen::Vector3d> applySymmOp(const Eigen::Vector3d &vec);
-
-
-
 };
 
 double distance(const Eigen::Vector3d &k1, const Eigen::Vector3d &k2);

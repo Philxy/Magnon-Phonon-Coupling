@@ -2,11 +2,6 @@
 #include <sstream>
 // #include <fftw3.h>
 #include "../include/couplingParameters.h"
-#include "../include/fourierTransform.h"
-#include "../include/path.h"
-#include "../include/eigen.h"
-#include "../include/util.h"
-#include "../include/dispersion.h"
 #include "../include/diagonalization.h"
 #include "../include/dynamics.h"
 
@@ -17,10 +12,7 @@ int main()
 
     // Read the magnon-phonon coupling parameters from the files
 
-    std::vector<CouplingParameter> parameters;  // contains all the parameters
-    std::vector<CouplingParameter> parametersX; // contains all the parameters with x displacement
-    std::vector<CouplingParameter> parametersY; // contains all the parameters with y displacement
-    std::vector<CouplingParameter> parametersZ; // contains all the parameters with z displacement
+    std::vector<CouplingParameter> parameters, parametersX, parametersY, parametersZ; // vectors containing all the parameters or the parameters with x,y,z displacement
 
     std::vector<CouplingParameter> ij_uk_x_parameter = readCouplingParameters("Parameters/SLC_Eisen/Fe_full_tensor_ij-uk_x_displacement.csv", X);
     std::vector<CouplingParameter> ij_uk_y_parameter = readCouplingParameters("Parameters/SLC_Eisen/Fe_full_tensor_ij-uk_y_displacement.csv", Y);
@@ -30,21 +22,18 @@ int main()
     parametersX.insert(parametersX.end(), ij_uk_x_parameter.begin(), ij_uk_x_parameter.end());
     parametersY.insert(parametersY.end(), ij_uk_y_parameter.begin(), ij_uk_y_parameter.end());
     parametersZ.insert(parametersZ.end(), ij_uk_z_parameter.begin(), ij_uk_z_parameter.end());
-
-    // parameters.insert(parameters.end(), ij_uk_x_parameter.begin(), ij_uk_x_parameter.end());
-    // parameters.insert(parameters.end(), ij_uk_y_parameter.begin(), ij_uk_y_parameter.end());
-    // parameters.insert(parameters.end(), ij_uk_z_parameter.begin(), ij_uk_z_parameter.end());
-
+    // Add all parameters to the parameters vector
     parameters.insert(parameters.end(), ij_uk_x_parameter.begin(), ij_uk_x_parameter.end());
     parameters.insert(parameters.end(), ij_uk_y_parameter.begin(), ij_uk_y_parameter.end());
     parameters.insert(parameters.end(), ij_uk_z_parameter.begin(), ij_uk_z_parameter.end());
 
-    // DIAGONALIZATION
-
-    std::vector<PhononDispParam> phononDispersion = readPhononDispParams("scripts/Data/QE_Pol_Disp/formatted_4x4x4_path_G_H.txt");
-    std::vector<MagnonDispParam> magnonDispersion = getMagnonDispFromPhononDisp(phononDispersion, "Parameters/J_bccFe.txt", "Outputs/numbersJIso_20x20.txt");
-
     /*
+
+    // _____________ Diagonalize the Hamiltonian _____________
+
+    std::vector<PhononDispParam> phononDispersion = readPhononDispParams("scripts/Data/gH_20000/path_formatted.txt");
+    std::vector<MagnonDispParam> magnonDispersion = getMagnonDispFromPhononDisp(phononDispersion, "Parameters/J_bccFe.txt", "Outputs/numbersJIso.txt");
+
     // Pre-allocate space for output data, initializing with empty strings or appropriate default values
     std::vector<std::string> outEV(phononDispersion.size());
     std::vector<std::string> outCD(phononDispersion.size());
@@ -62,7 +51,6 @@ int main()
         }
 
         Diagonalization diag(parameters, phononDispersion.at(idx), magnonDispersion.at(idx), kVec);
-
         diag.calcCD();
         diag.calcMatrixHamiltonian();
         diag.diagonalize();
@@ -110,9 +98,10 @@ int main()
         outCD[idx] = cdStream.str();
         outEVectors[idx] = eVecStream.str();
     }
-    std::ofstream outFileEV("Outputs/4x4x4Eigenenergies.txt");
-    std::ofstream outFileCD("Outputs/4x4x4CD.txt");
-    std::ofstream outFileEVectors("Outputs/4x4x4EVec.txt");
+
+    std::ofstream outFileEV("Outputs/gH_20000_6x6x6/Eigenenergies.txt");
+    std::ofstream outFileCD("Outputs/gH_20000_6x6x6/CD.txt");
+    std::ofstream outFileEVectors("Outputs/gH_20000_6x6x6/EVec.txt");
 
     for (const auto &line : outEV)
     {
@@ -134,25 +123,43 @@ int main()
     return 0;
     */
 
-    // init symmetry group
-    // SymmetrieGroup symGroups;
-    // symGroups.init("Parameters/symmetryMatricesAll.txt");
-
     // init irreducible BZ
     IrreducibleBZ irrBZ;
-    // irrBZ.symmetryGroup = symGroups;
-    irrBZ.init("Parameters/4x4x4/irrPoints_edit.txt");
-    irrBZ.initMagnonPhononDispFromFile("Parameters/4x4x4/phData_edit.txt", "Parameters/J_bccFe.txt", "Parameters/4x4x4/magDisp.txt");
-    irrBZ.readMultiplicities("Parameters/4x4x4/multiplicity_edit.txt");
+    irrBZ.init("Parameters/8x8x8/irrPoints_edit.txt");
+    irrBZ.initMagnonPhononDispFromFile("Parameters/8x8x8/ph_data_edit.txt", "Parameters/J_bccFe.txt", "Parameters/8x8x8/magDisp.txt");
+    irrBZ.readMultiplicities("Parameters/8x8x8/multiplicity_edit.txt");
     irrBZ.initSymmOp("Parameters/tu_graz_symm_bcc.txt");
 
-    // init coefficients
-    irrBZ.init_k_prime();
-    irrBZ.initCoefficients(parameters, nFT);
-    //irrBZ.saveCoefficientsAsSqrtAbs("Outputs/coefficients.txt");
+    // irrBZ.init_k_prime();
+    // irrBZ.save_k_primes_to_file("Outputs/k_primes.txt");
+    irrBZ.init_k_primes_from_file("Outputs/k_primes.txt");
+
+    // irrBZ.initCoefficients(parameters, nFT);
+    // irrBZ.saveCoefficientsAsSqrtAbs("Outputs/coefficients.txt");
     irrBZ.readCoefficients("Outputs/coefficients.txt");
-    irrBZ.initOccNumbers(10, 10); // 25.85, 30.0 (room temp)
+    irrBZ.initOccNumbers(10, 15); // 25.85, 30.0 (room temp)
     irrBZ.integrate();
+
+    /*
+    // Testing calculation of k_primes
+    int signs[3] = {1, 1, 1};
+
+    for (auto k : irrBZ.irreducibleBZVectors)
+    {
+        for (auto q : irrBZ.irreducibleBZVectors)
+        {
+            int n = irrBZ.get_k_prime(k, q, signs);
+            if (n == -1)
+            {
+                std::cout << "k: " << k(0) / (2 * pi) << " " << k(1) / (2 * pi) << " " << k(2) / (2 * pi) << " | q: " << q(0) / (2 * pi) << " " << q(1) / (2 * pi) << " " << q(2) / (2 * pi) << std::endl;
+            }
+            else
+            {
+                std::cout << "Success " << n << std::endl;
+            }
+        }
+    }
+    */
 
     // Testing the symmetry operations
     // Eigen::Vector3d q(1, 2, 3);

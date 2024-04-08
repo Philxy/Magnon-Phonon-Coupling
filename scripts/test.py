@@ -1,21 +1,16 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 
-N = 10
-for nk in range(0, N):
-    for nq in range(0, N):
-        for nkp in range(0, N):
-
-            m = (2*(nk+nkp+nq) - 3*N)/(2*N)
-
-            # print(m)
-            # nkp = (2*N*m+3*N)/(2) - nk - nq
+def deltaDistrApprox(x, a=0.1):
+    return 1.0 / (a * np.sqrt(np.pi)) * np.exp(-(x / a) * (x / a))
 
 
-for nk in range(0, N):
-    for nq in range(0, N):
-        print('\n')
+x = np.linspace(-3, 3, 1000)
 
-        for m in range(-1, 2):
-            nkp = (2 * N * m + 3 * N) / 2 - nk - nq
-            print(m, nkp)
+for a in [0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.0]:
+    y = deltaDistrApprox(x, a=a)
+
+    plt.plot(x, y, label=f'a={a}')
+plt.legend()
+plt.show()

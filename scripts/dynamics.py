@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-
 filename = 'Outputs/time_evolut_energies.txt'
 
 with open(filename, 'r') as file:
@@ -26,7 +25,6 @@ for line in data:
     magnetic_energy.append(magE)
     phonon_energy.append(phE)
     time.append(t)
-
 
 
 plt.plot(time, total_energy, label='Total Energy')

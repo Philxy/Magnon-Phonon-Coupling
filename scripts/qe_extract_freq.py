@@ -150,9 +150,9 @@ def write_data_to_file(data, filename):
 # Usage example:
 # Make sure this calls the appropriate function
 data = extract_data_grouped_by_q_vector(
-    'Parameters/4x4x4/matdyn.modes')
+    'scripts/Data/gH_20000/bccfe.eig')
 write_data_to_file(
-    data, filename='Parameters/4x4x4/irrPoints.txt')
+    data, filename='scripts/Data/gH_20000/path_formatted.txt')
 
 
 def plot_disp_from_file(filename):
