@@ -14,7 +14,7 @@ struct Diagonalization
     std::vector<std::complex<double>> C, D;
     std::vector<CouplingParameter> couplingParameters;
     Eigen::MatrixXcd matrixHamiltonian;
-
+    std::vector<std::complex<double>> angularMomentum;
     std::vector<double> eigenEnergies;
     Eigen::MatrixXcd eigenvectors;
     Eigen::MatrixXcd eigenvectors_inverse;
@@ -24,6 +24,10 @@ struct Diagonalization
     void calcCD();
     void calcMatrixHamiltonian();
     void diagonalize();
+
+    void calcAngularMomentum(double time);
+
+
 };
 
 std::vector<std::vector<double>> diagonalizeHamiltonian(const std::vector<Vector3D> &path, const std::vector<PhononDispParam> &phononDispersion, const std::vector<MagnonDispParam> &magnonDispersion, const std::vector<CouplingParameter> &parameters);

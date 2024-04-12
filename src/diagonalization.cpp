@@ -127,12 +127,17 @@ Eigen::MatrixXd getMatrix_g()
     }
     return g;
 }
-
+/*
+Performs the diagonalization of gH
+- If V is a matrix with the eigenvectors as its columns
+  and D a diagonal matrix withe the eigenvalues on the diagonal
+  then gH V = V D -> V^-1 gH V = D
+*/
 void Diagonalization::diagonalize()
 {
-    Eigen::ComplexEigenSolver<Eigen::MatrixXcd> solver;
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> solver;
     Eigen::MatrixXcd matrix = getMatrix_g() * matrixHamiltonian;
-    solver.compute(matrix, true);
+    solver.compute(matrix);
 
     eigenvectors = solver.eigenvectors();
     eigenvectors_inverse = solver.eigenvectors().inverse();
@@ -140,10 +145,94 @@ void Diagonalization::diagonalize()
     // Loop over each eigenvalue
     for (int i = 0; i < solver.eigenvalues().size(); ++i)
     {
-        double realPart = solver.eigenvalues()[i].real();
+        double realPart = solver.eigenvalues()[i];
 
         eigenEnergies.push_back(realPart);
     }
+}
+
+int getLeviLevita(int i, int j, int k)
+{
+    return 0;
+}
+
+void Diagonalization::calcAngularMomentum(double time)
+{
+
+    Eigen::MatrixXcd matrixL = Eigen::MatrixXcd::Zero(8, 8);
+    Eigen::MatrixXcd g = getMatrix_g();
+    std::complex<double> i(0, 1);
+
+    double polVec = phDisp.polVectors[0][0] * phDisp.polVectors[2][1] - phDisp.polVectors[2][0] * phDisp.polVectors[0][1]; // phDisp.polVectors[1][2]; //
+
+    assert(matrixL.rows() == 8);
+    assert(matrixL.cols() == 8);
+    assert(g.rows() == 8);
+    assert(g.cols() == 8);
+    assert(eigenvectors.rows() == 8);
+    assert(eigenvectors.cols() == 8);
+    assert(eigenvectors_inverse.rows() == 8);
+    assert(eigenvectors_inverse.cols() == 8);
+
+    matrixL(0, 1) = -polVec;
+    matrixL(1, 0) = polVec;
+
+    matrixL(4, 1) = polVec;
+    matrixL(5, 0) = -polVec;
+
+    matrixL(1, 4) = polVec;
+    matrixL(5, 4) = -polVec;
+
+    matrixL(0, 5) = -polVec;
+    matrixL(4, 5) = polVec;
+
+
+    auto D = i / 2.0 * eigenvectors_inverse * matrixL * eigenvectors;
+
+    // std::cout << phDisp.polVectors[0][0] << phDisp.polVectors[1][0] << phDisp.polVectors[2][0] << std::endl;
+    // std::cout << phDisp.polVectors[0][1] << phDisp.polVectors[1][1] << phDisp.polVectors[2][1] << std::endl;
+    // std::cout << phDisp.polVectors[0][2] << phDisp.polVectors[1][2] << phDisp.polVectors[2][2] << std::endl;
+    // std::cout << D << std::endl;
+    // std::cout << polVec << std::endl;
+
+    for (int i = 0; i < 8; i++)
+    {
+        angularMomentum.push_back(D(i,i));
+    }
+
+    return;
+    /*
+    Eigen::Vector3d L;
+    std::complex<double> i(0, 1);
+
+    for (int nu = 0; nu < 8; nu++)
+    {
+        Eigen::Vector3cd sum = Eigen::Vector3cd::Zero();
+        Eigen::VectorXcd alpha_nu = eigenvectors_inverse.row(nu);
+        Eigen::VectorXcd alpha_dagger_nu = alpha_nu.conjugate();
+
+        for (int lambda = 0; lambda < 3; lambda++)
+        {
+            for (int lambda_prime = 0; lambda_prime < 3; lambda_prime++)
+            {
+                double E_lam = phDisp.E[lambda];
+                double E_lam_prime = phDisp.E[lambda_prime];
+                Eigen::Vector3d polVec_lam(phDisp.polVectors[0][lambda], phDisp.polVectors[1][lambda], phDisp.polVectors[2][lambda]);
+                Eigen::Vector3d polVec_lam_prime(phDisp.polVectors[0][lambda_prime], phDisp.polVectors[1][lambda_prime], phDisp.polVectors[2][lambda_prime]);
+                Eigen::Vector3d polVecCrossProduct = polVec_lam_prime.cross(polVec_lam);
+                std::complex<double> expFunc = std::exp(i * (E_lam - E_lam_prime) * time);
+                sum += i * sqrt(E_lam_prime / E_lam) * alpha_nu.dot(alpha_dagger_nu) * polVecCrossProduct * expFunc;
+            }
+        }
+        double Lx = sqrt(sum(0).real() * sum(0).real() + sum(0).imag() * sum(0).imag());
+        double Ly = sqrt(sum(1).real() * sum(1).real() + sum(1).imag() * sum(1).imag());
+        double Lz = sqrt(sum(2).real() * sum(2).real() + sum(2).imag() * sum(2).imag());
+
+        // L = Eigen::Vector3d(Lx, Ly, Lz);
+        L = sum.real();
+        angularMomentum.push_back(L);
+    }
+    */
 }
 
 std::vector<std::vector<double>> diagonalizeHamiltonian(const std::vector<Vector3D> &path, const std::vector<PhononDispParam> &phononDispersion, const std::vector<MagnonDispParam> &magnonDispersion, const std::vector<CouplingParameter> &parameters)

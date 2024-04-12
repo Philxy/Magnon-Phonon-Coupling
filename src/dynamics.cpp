@@ -5,6 +5,12 @@ double BoseEinstein(double energy, double thermalEnergy)
     return 1.0 / (exp(energy / thermalEnergy) - 1);
 }
 
+// calculates the thermal energy from the Bose-Einstein distribution given the energy and the occupation number
+double BoseEinsteinInverted(double energy, double occupationNumber)
+{
+    return energy / log(1.0 / occupationNumber + 1);
+}
+
 double distance(const Eigen::Vector3d &k1, const Eigen::Vector3d &k2)
 {
     Eigen::Vector3d diff = k1 - k2;
@@ -455,9 +461,9 @@ void IrreducibleBZ::initCoefficients(const std::vector<CouplingParameter> &param
                 for (int branch = 0; branch < 3; branch++)
                 {
                     // positive sign of q
-                    gammaMinus[branch] += 3.8636 * sqrt(ftN) / (2.0 * S) * (gammaMJxxmu - gammaMJyymu - i * gammaMJxymu - i * gammaMJyxmu) * sqrt(1 / (2 * atomicMass * phDisp.at(j).E[branch])) * phDisp.at(j).polVectors[ax][branch];
-                    gammaPlus[branch] += 3.8636 * sqrt(ftN) / (2.0 * S) * (gammaPJxxmu - gammaPJyymu + i * gammaPJxymu + i * gammaPJyxmu) * sqrt(1 / (2 * atomicMass * phDisp.at(j).E[branch])) * phDisp.at(j).polVectors[ax][branch];
-                    gammaZ[branch] += 3.8636 * sqrt(ftN) / (2.0 * S) * (2.0 * gammaZJxxmu + 2.0 * gammaZJyymu - 4.0 * gammaZJzzmu + 2.0 * i * gammaZJyxmu - 2.0 * i * gammaZJxymu) * sqrt(1 / (2 * atomicMass * phDisp.at(j).E[branch])) * phDisp.at(j).polVectors[ax][branch];
+                    gammaMinus[branch] += 3.8636 / (2.0 * S * sqrt(ftN)) * (gammaMJxxmu - gammaMJyymu - i * gammaMJxymu - i * gammaMJyxmu) * sqrt(1 / (2 * atomicMass * phDisp.at(j).E[branch])) * phDisp.at(j).polVectors[ax][branch];
+                    gammaPlus[branch] += 3.8636 / (2.0 * S * sqrt(ftN)) * (gammaPJxxmu - gammaPJyymu + i * gammaPJxymu + i * gammaPJyxmu) * sqrt(1 / (2 * atomicMass * phDisp.at(j).E[branch])) * phDisp.at(j).polVectors[ax][branch];
+                    gammaZ[branch] += 3.8636 / (2.0 * S * sqrt(ftN)) * (2.0 * gammaZJxxmu + 2.0 * gammaZJyymu - 4.0 * gammaZJzzmu + 2.0 * i * gammaZJyxmu - 2.0 * i * gammaZJxymu) * sqrt(1 / (2 * atomicMass * phDisp.at(j).E[branch])) * phDisp.at(j).polVectors[ax][branch];
 
                     // debug statement
                     // if (gammaZ[branch].real() > 1E4 || gammaZ[branch].imag() > 1E4)
@@ -467,9 +473,9 @@ void IrreducibleBZ::initCoefficients(const std::vector<CouplingParameter> &param
                     //}
 
                     // neg sign of q
-                    gammaMinus_negativeSign[branch] += 3.8636 * sqrt(ftN) / (2.0 * S) * (gammaMJxxmu_negativeSign - gammaMJyymu_negativeSign - i * gammaMJxymu_negativeSign - i * gammaMJyxmu_negativeSign) * sqrt(1 / (2 * atomicMass * phDisp.at(j).E[branch])) * phDisp.at(j).polVectors[ax][branch];
-                    gammaPlus_negativeSign[branch] += 3.8636 * sqrt(ftN) / (2.0 * S) * (gammaPJxxmu_negativeSign - gammaPJyymu_negativeSign + i * gammaPJxymu_negativeSign + i * gammaPJyxmu_negativeSign) * sqrt(1 / (2 * atomicMass * phDisp.at(j).E[branch])) * phDisp.at(j).polVectors[ax][branch];
-                    gammaZ_negativeSign[branch] += 3.8636 * sqrt(ftN) / (2.0 * S) * (2.0 * gammaZJxxmu_negativeSign + 2.0 * gammaZJyymu_negativeSign - 4.0 * gammaZJzzmu_negativeSign + 2.0 * i * gammaZJyxmu_negativeSign - 2.0 * i * gammaZJxymu_negativeSign) * sqrt(1 / (2 * atomicMass * phDisp.at(j).E[branch])) * phDisp.at(j).polVectors[ax][branch];
+                    gammaMinus_negativeSign[branch] += 3.8636 / (2.0 * S * sqrt(ftN)) * (gammaMJxxmu_negativeSign - gammaMJyymu_negativeSign - i * gammaMJxymu_negativeSign - i * gammaMJyxmu_negativeSign) * sqrt(1 / (2 * atomicMass * phDisp.at(j).E[branch])) * phDisp.at(j).polVectors[ax][branch];
+                    gammaPlus_negativeSign[branch] += 3.8636 / (2.0 * S * sqrt(ftN)) * (gammaPJxxmu_negativeSign - gammaPJyymu_negativeSign + i * gammaPJxymu_negativeSign + i * gammaPJyxmu_negativeSign) * sqrt(1 / (2 * atomicMass * phDisp.at(j).E[branch])) * phDisp.at(j).polVectors[ax][branch];
+                    gammaZ_negativeSign[branch] += 3.8636 / (2.0 * S * sqrt(ftN)) * (2.0 * gammaZJxxmu_negativeSign + 2.0 * gammaZJyymu_negativeSign - 4.0 * gammaZJzzmu_negativeSign + 2.0 * i * gammaZJyxmu_negativeSign - 2.0 * i * gammaZJxymu_negativeSign) * sqrt(1 / (2 * atomicMass * phDisp.at(j).E[branch])) * phDisp.at(j).polVectors[ax][branch];
                 }
             }
 
@@ -751,11 +757,12 @@ double deltaDistrApprox(double x)
 void IrreducibleBZ::integrate()
 {
 
-    double tMax = 1E-3;
-    double dt = 1E-7;
+    double tMax = 1E1;
+    double dt = 1E-5;
     int nMax = int(tMax / dt);
 
     std::ofstream energy_file("Outputs/time_evolut_energies.txt");
+    std::ofstream temp_file("Outputs/time_evolut_temperature.txt");
 
     // init the occupation for the next current step
     std::vector<std::array<double, 3>> occNumPh_curr = phOccNumbers;
@@ -937,7 +944,7 @@ void IrreducibleBZ::integrate()
             std::cout << "Progress: " << double(n) / nMax << std::endl;
         }
 
-        if (n % 1 == 0)
+        if (n % 100 == 0)
         {
             // write energy to file
             energy_file << n * dt << " " << magEnergy << " " << phEnergy << " " << totalEnergy << " ";
@@ -948,6 +955,29 @@ void IrreducibleBZ::integrate()
             }
 
             energy_file << "\n";
+
+            // calculate the temperature and write to file
+            temp_file << n * dt;
+
+            // temperature phonon
+            for (int i = 0; i < irreducibleBZVectors.size(); i++)
+            {
+                double sum = 0;
+                for (int branch : {0, 1, 2})
+                {
+                    double thermalEnergyPh = BoseEinsteinInverted(phDisp.at(i).E[branch], occNumPh_curr.at(i)[branch]);
+                    temp_file << " " << thermalEnergyPh;
+                }
+            }
+
+            // temperature magnon
+            for (int i = 0; i < irreducibleBZVectors.size(); i++)
+            {
+                double thermalEnergyMag = BoseEinsteinInverted(magDisp.at(i).energy, occNumMag_curr.at(i));
+                temp_file << " " << thermalEnergyMag;
+            }
+
+            temp_file << "\n";
         }
 
         // Finally, update the occupation numbers
@@ -960,6 +990,7 @@ void IrreducibleBZ::integrate()
             }
         }
     }
+    temp_file.close();
     energy_file.close();
 }
 

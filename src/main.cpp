@@ -27,17 +27,18 @@ int main()
     parameters.insert(parameters.end(), ij_uk_y_parameter.begin(), ij_uk_y_parameter.end());
     parameters.insert(parameters.end(), ij_uk_z_parameter.begin(), ij_uk_z_parameter.end());
 
-    /*
+    ///*
 
     // _____________ Diagonalize the Hamiltonian _____________
 
-    std::vector<PhononDispParam> phononDispersion = readPhononDispParams("scripts/Data/gH_20000/path_formatted.txt");
+    std::vector<PhononDispParam> phononDispersion = readPhononDispParams("scripts/Data/gH1000/path.txt");
     std::vector<MagnonDispParam> magnonDispersion = getMagnonDispFromPhononDisp(phononDispersion, "Parameters/J_bccFe.txt", "Outputs/numbersJIso.txt");
 
     // Pre-allocate space for output data, initializing with empty strings or appropriate default values
     std::vector<std::string> outEV(phononDispersion.size());
     std::vector<std::string> outCD(phononDispersion.size());
     std::vector<std::string> outEVectors(phononDispersion.size());
+    std::vector<std::string> outAngularMomentum(phononDispersion.size());
 
 #pragma omp parallel for
     for (int idx = 0; idx < phononDispersion.size(); idx++)
@@ -54,6 +55,7 @@ int main()
         diag.calcCD();
         diag.calcMatrixHamiltonian();
         diag.diagonalize();
+        diag.calcAngularMomentum(0.0);
 
         // Some debug output
         // std::cout << "k: \n";
@@ -70,7 +72,7 @@ int main()
         // std::cout << diag.D.at(0) << " " << diag.D.at(1) << " " << diag.D.at(2) << std::endl;
 
         // Construct the strings for each output based on the computation
-        std::ostringstream evStream, cdStream, eVecStream;
+        std::ostringstream evStream, cdStream, eVecStream, angMomStream;
 
         for (int i = 0; i < 7; i++)
         {
@@ -93,15 +95,22 @@ int main()
             }
         }
 
+
+        for (int nu = 0 ; nu < 8 ; nu++)
+        {
+            angMomStream << diag.angularMomentum.at(nu) << ",";
+        }
         // Assign the constructed strings to the corresponding vectors
         outEV[idx] = evStream.str();
         outCD[idx] = cdStream.str();
         outEVectors[idx] = eVecStream.str();
+        outAngularMomentum[idx] = angMomStream.str();
     }
 
-    std::ofstream outFileEV("Outputs/gH_20000_6x6x6/Eigenenergies.txt");
-    std::ofstream outFileCD("Outputs/gH_20000_6x6x6/CD.txt");
-    std::ofstream outFileEVectors("Outputs/gH_20000_6x6x6/EVec.txt");
+    std::ofstream outFileEV("Outputs/gH_1000/Eigenenergies.txt");
+    std::ofstream outFileCD("Outputs/gH_1000/CD.txt");
+    std::ofstream outFileEVectors("Outputs/gH_1000/EVec.txt");
+    std::ofstream outFileAngularMomentum("Outputs/gH_1000/AngularMomentum.txt");
 
     for (const auto &line : outEV)
     {
@@ -115,13 +124,18 @@ int main()
     {
         outFileEVectors << line << "\n";
     }
+    for (const auto &line : outAngularMomentum)
+    {
+        outFileAngularMomentum << line << "\n";
+    }
 
+    outFileAngularMomentum.close();
     outFileEVectors.close();
     outFileEV.close();
     outFileCD.close();
 
     return 0;
-    */
+    //*/
 
     // init irreducible BZ
     IrreducibleBZ irrBZ;
@@ -137,7 +151,7 @@ int main()
     // irrBZ.initCoefficients(parameters, nFT);
     // irrBZ.saveCoefficientsAsSqrtAbs("Outputs/coefficients.txt");
     irrBZ.readCoefficients("Outputs/coefficients.txt");
-    irrBZ.initOccNumbers(10, 15); // 25.85, 30.0 (room temp)
+    irrBZ.initOccNumbers(2, 5); // 25.85, 30.0 (room temp) 10, 15
     irrBZ.integrate();
 
     /*
