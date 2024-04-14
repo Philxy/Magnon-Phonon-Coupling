@@ -38,58 +38,53 @@ def parse_complex(tuple_str):
     return complex(float(tuple_str[0]), float(tuple_str[1]))
 
 
-file_path = 'Outputs/numbersPh.txt'
+file_path = 'scripts/Data/phDispFullPath.txt'
 
 lattice_constant = 1
 
 # Initialize a list to hold the parsed data
-datak = []
 dataOmega = []
 # Open the file and read the data
 with open(file_path, 'r') as file:
     file.readline()
     for line in file:
         line = line.strip('\n')
-        parts = line.split(',')
+        parts = line.split()
+        omegas = [float(w) for w in parts[1:]]
 
-        kVector = [float(part) for part in parts[:3]]
-
-        omegas = [float(w) for w in parts[3:]]
-
-        datak.append(kVector)
         dataOmega.append(omegas)
 
 
 fig, axs = plt.subplots(
-    ncols=1, nrows=1, figsize=(16/2.25, 8/2.52), sharey=True)
+    ncols=1, nrows=1, figsize=(16/2.52, 8/2.52), sharey=True)
 plt.style.use("seaborn-v0_8-bright")
 
-num_paths = 6
-k_points_per_path = int(len(datak)/num_paths)
-
-x = np.arange(0, len(datak))
-
-split = 5 * k_points_per_path
 
 
-axs.plot(x[:split], [w[0] for w in dataOmega][:split])  # plot in meV
-axs.plot(x[:split], [w[1] for w in dataOmega][:split])  # plot in meV
-axs.plot(x[:split], [w[2] for w in dataOmega][:split])  # plot in meV
+x = np.linspace(0, 1, len(dataOmega))
+
+c = 'tab:orange'
+
+conversion_fac = 4.136/ 33.356 
+
+axs.plot(x, [w[0] * conversion_fac for w in dataOmega], color = c,linewidth=2.5)  # plot in meV
+axs.plot(x, [w[1] * conversion_fac for w in dataOmega], color = c,linewidth=2.5)  # plot in meV
+axs.plot(x, [w[2] * conversion_fac for w in dataOmega], color = c,linewidth=2.5)  # plot in meV
 
 labels = [r'$\Gamma$', '$H$', '$N$', r'$\Gamma$', '$P$', '$H$']
 
-for i in range(len(labels)):
-    plt.axvline(x=i*k_points_per_path, color='black', linewidth=0.5)
+axs.set_xticks([0, .2, .4, .6, .8, 1])
+axs.set_xticklabels(labels)
 
 
-axs.set_xlim(0, (len(labels)-1)*k_points_per_path)
+for i in [0, .2, .4, .6, .8, 1]:
+    axs.axvline(x=i, color='black', linestyle='solid', linewidth=0.5)
 
-
-axs.set_xticks([i * k_points_per_path for i in range(len(labels))], labels)
+axs.set_xlim(-0.0,1.0)
 
 axs.set_ylabel(r'$\mathrm{phonon}$ $\mathrm{dispersion}$ $\mathrm{(meV)}$')
 
-plt.savefig('scripts/Figures/ph_disp_bccFe.pdf')
+plt.savefig('scripts/Figures/ph_disp_bccFe_new.pdf')
 plt.show()
 plt.clf()
 

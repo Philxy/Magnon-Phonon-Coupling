@@ -67,7 +67,7 @@ with open(file_path, 'r') as file:
 
 
 
-fig, axs = plt.subplots(ncols=1,nrows=1,figsize=(16/2.25,8/2.52), sharey=True)
+fig, axs = plt.subplots(ncols=1,nrows=1,figsize=(16/2.52,8/2.52), sharey=True)
 plt.style.use("seaborn-v0_8-bright")
 
 num_paths = 6
@@ -105,7 +105,7 @@ axs.set_xticks([i * k_points_per_path for i in range(len(labels))], labels )
 
 axs.set_ylabel(r'$\mathrm{magnon}$ $\mathrm{dispersion}$ $\mathrm{(meV)}$')
 
-plt.savefig('scripts/Figures/mag_disp_bccFe.pdf')
+plt.savefig('scripts/Figures/mag_disp_bccFe_final.pdf')
 plt.show()
 plt.clf()
 

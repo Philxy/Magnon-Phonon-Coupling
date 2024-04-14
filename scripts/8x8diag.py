@@ -48,7 +48,7 @@ def retrieve_data_from_file(file_path):
     return rest
 
 
-filename8x8 = "Outputs/gH_1000/Eigenenergies.txt"
+filename8x8 = "Outputs/gH_20000_6x6x6/Eigenenergies.txt"
 filename_ph = "Outputs/numbersPh_20x20x20.txt"
 filename_mag = "Outputs/numbersJIso_20x20.txt"
 
@@ -58,8 +58,8 @@ eigenenergies = retrieve_data_from_file(filename8x8)
 # eigenenergies_mag = retrieve_data_from_file(filename_mag)[1]
 
 
-CDs = retrieve_data_from_file("Outputs/gH_1000/CD.txt")
-S_matrix = retrieve_data_from_file("Outputs/gH_1000/EVec.txt")
+CDs = retrieve_data_from_file("Outputs/gH_20000_6x6x6/CD.txt")
+S_matrix = retrieve_data_from_file("Outputs/gH_20000_6x6x6/EVec.txt")
 
 
 Cs = [C[:3] for C in CDs]
@@ -172,15 +172,111 @@ cb.set_ticklabels([r'$\mathrm{phonon-like}$', r'$\mathrm{magnon-like}$'])
 plt.xlim(0.015, 0.095)
 plt.ylabel('transformation matrix elements')
 plt.tight_layout()
-plt.savefig(
-    'scripts/Figures/8x8diag_transformation_matrix_elements_1000.png', dpi=600)
+#plt.savefig('scripts/Figures/8x8diag_transformation_matrix_elements_20k.png', dpi=600)
+#plt.show()
+plt.clf()
+
+
+import scienceplots
+
+plt.style.use('science')
+
+plt.figure(figsize=(8/2.52,8/2.52))
+#plt.style.use("seaborn-v0_8-bright")
+
+
+for i in range(8):
+    y_coupl = [np.abs(ev[i]) for ev in eigenenergies]
+    plt.plot(x_coupl, y_coupl, color='tab:blue')
+
+plt.xticks(ticks=[0, 1], labels=[r'$\Gamma$', r'$H$'])
+
+plt.ylabel('dispersion relation (meV)')
+plt.tight_layout()
+plt.savefig('scripts/Figures/diag.png', dpi=400)
 plt.show()
 plt.clf()
 
-print(min, max)
+inset_x0 = 0.0
+inset_x1 = 0.12
+inset_y0 = 0.0
+inset_y1 = 9
+
+
+fig, ax = plt.subplots(figsize=(8/2.52,8/2.52))
+
+for i in range(8):
+    y_coupl = [np.abs(ev[i]) for ev in eigenenergies]
+    ax.plot(x_coupl[:int(len(x_coupl)*inset_x1)], y_coupl[:int(len(x_coupl)*inset_x1)], color='tab:blue')
+
+
+axin1 = ax.inset_axes([0.15, 0.55, 0.45, 0.4])
+
+for i in range(8):
+    y_coupl = [np.abs(ev[i]) for ev in eigenenergies]
+    axin1.set_ylim(2, 3)
+    axin1.set_xlim(0.05, 0.065)
+    axin1.plot(x_coupl[:int(len(x_coupl)*inset_x1)], y_coupl[:int(len(x_coupl)*inset_x1)], color='tab:blue', linewidth=1.2)
+
+axin1.set_xticks([])
+ax.indicate_inset_zoom(axin1, edgecolor="black")
+ax.set_ylabel('dispersion relation (meV)')
+plt.tight_layout()
+plt.savefig('scripts/Figures/diag_inset.png', dpi=400)
+plt.show()
+
+
+
+
+# set up double plots
+# Setup figure and grids
+fig = plt.figure(figsize=(12, 4))  # Wider figure to accommodate both plots
+gs = fig.add_gridspec(1, 2, width_ratios=[1, 3])  # Width ratio between first and second plot
+
+# First subplot
+ax1 = fig.add_subplot(gs[0])
+for i in range(8):
+    y_coupl = [np.abs(ev[i]) for ev in eigenenergies]
+    ax1.plot(x_coupl, y_coupl, color='tab:blue')
+ax1.set_xticks([0, 1])
+ax1.set_xticklabels([r'$\Gamma$', r'$H$'])
+ax1.set_ylabel('dispersion relation (meV)')
+
+# Second subplot
+ax2 = fig.add_subplot(gs[1])
+for i in range(8):
+    y_coupl = [np.abs(ev[i]) for ev in eigenenergies]
+    ax2.plot(x_coupl[:int(len(x_coupl)*0.12)], y_coupl[:int(len(x_coupl)*0.12)], color='tab:blue')
+
+# Inset for the second subplot
+axin1 = ax2.inset_axes([0.05, 0.45, 0.45, 0.5])
+for i in range(8):
+    y_coupl = [np.abs(ev[i]) for ev in eigenenergies]
+    axin1.plot(x_coupl[:int(len(x_coupl)*0.12)], y_coupl[:int(len(x_coupl)*0.12)], color='tab:blue', linewidth=1.2)
+axin1.set_ylim(2, 3)
+axin1.set_xlim(0.05, 0.065)
+axin1.set_xticks([])
+ax2.indicate_inset_zoom(axin1, edgecolor="black")
+ax2.set_ylabel('dispersion relation (meV)')
+
+plt.tight_layout()
+plt.savefig('scripts/Figures/diag_double.png', dpi=400)
+plt.show()
+
+
+exit()
+
+
+
+# Trying to display the disp rel with correct color bar!
 
 cmap = plt.get_cmap('rainbow')
 norm = plt.Normalize(vmin=min*0.99, vmax=max*1.00)
+
+
+
+
+
 
 
 for j in it:

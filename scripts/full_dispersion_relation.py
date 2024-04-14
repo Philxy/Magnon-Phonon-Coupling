@@ -68,19 +68,19 @@ def parse_complex(tuple_str):
     return complex(float(tuple_str[0]), float(tuple_str[1]))
 
 
-def retrieve_data_from_file(file_path):
+def retrieve_data_from_file(file_path, separator=',', skip_first_line=True):
 
     rest = []
-    kVectors = []
 
     with open(file_path, 'r') as file:
-        file.readline()
+        
+        if skip_first_line:
+            file.readline()
+
         for line in file:
             line = line.strip('\n')
-            parts = line.split(',')
+            parts = line.split(separator)
 
-            kVector = [float(part) for part in parts[:3]]
-            kVectors.append(kVector)
 
             # Use regular expression to find all tuples of complex numbers
             matches = re.findall(r'\([-\d.e]+,[-\d.e]+\)', line)
@@ -90,7 +90,7 @@ def retrieve_data_from_file(file_path):
             else:
                 rest.append([float(z) for z in parts[3:]])
 
-    return [kVectors, rest]
+    return rest
 
 
 def get_file_length(file_path):
@@ -110,71 +110,69 @@ def main():
 
     # magnon dispersion relation
     #file_magnon = 'scripts/Data/bccFe_disp_rel/numbersJIso.txt'
-    file_magnon = 'Outputs/numbersJIso_test.txt'
+    file_magnon = 'scripts/Data/analytical/magDisp.txt'
     # phonon dispersion relation
     #file_phonon = 'scripts/Data/bccFe_disp_rel/numbersPh.txt'
-    file_phonon = 'Outputs/numbersPhTest.txt'
+    file_phonon = 'scripts/Data/analytical/path.txt'
     # DMI-like coupling parameters
     #file_phonon = 'scripts/Data/bccFe_disp_rel/numbersPh.txt'
-    file_DMIlike = 'Outputs/numbersDTest.txt'
+    file_DMIlike = 'scripts/Data/analytical/CD.txt'
 
 
     #file_DMIlike = "Outputs/numbersD.txt"
     #file_phonon = "Outputs/numbersPh.txt"
     #file_magnon = "Outputs/numbersJIso.txt"
 
-    data_ph = retrieve_data_from_file(file_phonon)
+    data_ph = retrieve_data_from_file(file_phonon,separator=' ')
     data_mag = retrieve_data_from_file(file_magnon)
-    data_D = retrieve_data_from_file(file_DMIlike)
+    data_D = retrieve_data_from_file(file_DMIlike, skip_first_line=False)
 
-    num_kVec = get_file_length(file_magnon)
 
-    # contains the k vectors
-    kVectors = np.zeros(shape=(num_kVec, 3), dtype=float)
+    size = len(data_ph)
+
     # contains the phonon energy dispersion relation
-    ph_energy = np.zeros(shape=(num_kVec, 3), dtype=float)
+    ph_energy = np.zeros(shape=(size, 3), dtype=float)
     # contains the magnon energy dispersion relation
-    mag_energy = np.zeros(shape=(num_kVec), dtype=float)
+    mag_energy = np.zeros(shape=(size), dtype=float)
     # polarization vectors where the columns represent the pol vectors: e1 = [pol_vec[0][0], pol_vec[1][0], pol_vec[2][0]] and so on
-    pol_vec = np.zeros(shape=(num_kVec, 3, 3), dtype=float)
+    pol_vec = np.zeros(shape=(size, 3, 3), dtype=float)
     # ph-mg coupling parameters
-    DMI_like_coupl = np.zeros(shape=(num_kVec, 2, 3), dtype=complex)
-    DMI_like_coupl_neg_k = np.zeros(shape=(num_kVec, 2, 3), dtype=complex) # for the k values with the opposite sign as above
+    DMI_like_coupl = np.zeros(shape=(size, 2, 3), dtype=complex)
+    DMI_like_coupl_neg_k = np.zeros(shape=(size, 2, 3), dtype=complex) # for the k values with the opposite sign as above
 
+    print(data_D[0])
 
-    assert len(data_D[0]) == len(data_ph[0]) and len(data_mag[0]) == len(
-        data_ph[0]),  "The data should have the same number of k Vectors!"
+    assert len(data_D) == len(data_ph) == len(data_mag),  "The data should have the same number of k Vectors!"
 
     # Assign the arrays with the data given in the files:
-    for idx in range(num_kVec):
+    for idx in range(len(data_ph)):
 
-        kVectors[0], kVectors[1], kVectors[2] = data_ph[0][idx]
-        ph_energy[idx][0], ph_energy[idx][1], ph_energy[idx][2] = data_ph[1][idx][:3]
-        mag_energy[idx] = data_mag[1][idx][0] * 13.6 # Umrechnung von mRy auf meV!!!
+        ph_energy[idx][0], ph_energy[idx][1], ph_energy[idx][2] = data_ph[idx][:3]
+        mag_energy[idx] = data_mag[idx][0].real
 
-        pol_vec[idx][0][0] = data_ph[1][idx][3]
-        pol_vec[idx][1][0] = data_ph[1][idx][4]
-        pol_vec[idx][2][0] = data_ph[1][idx][5]
-        pol_vec[idx][0][1] = data_ph[1][idx][6]
-        pol_vec[idx][1][1] = data_ph[1][idx][7]
-        pol_vec[idx][2][1] = data_ph[1][idx][8]
-        pol_vec[idx][0][2] = data_ph[1][idx][9]
-        pol_vec[idx][1][2] = data_ph[1][idx][10]
-        pol_vec[idx][2][2] = data_ph[1][idx][11]
+        pol_vec[idx][0][0] = data_ph[idx][3]
+        pol_vec[idx][1][0] = data_ph[idx][4]
+        pol_vec[idx][2][0] = data_ph[idx][5]
+        pol_vec[idx][0][1] = data_ph[idx][6]
+        pol_vec[idx][1][1] = data_ph[idx][7]
+        pol_vec[idx][2][1] = data_ph[idx][8]
+        pol_vec[idx][0][2] = data_ph[idx][9]
+        pol_vec[idx][1][2] = data_ph[idx][10]
+        pol_vec[idx][2][2] = data_ph[idx][11]
 
-        DMI_like_coupl[idx][0][0] = data_D[1][idx][0]
-        DMI_like_coupl[idx][0][1] = data_D[1][idx][1]
-        DMI_like_coupl[idx][0][2] = data_D[1][idx][2]
-        DMI_like_coupl[idx][1][0] = data_D[1][idx][3]
-        DMI_like_coupl[idx][1][1] = data_D[1][idx][4]
-        DMI_like_coupl[idx][1][2] = data_D[1][idx][5]
+        DMI_like_coupl[idx][0][0] = data_D[idx][0]
+        DMI_like_coupl[idx][0][1] = data_D[idx][1]
+        DMI_like_coupl[idx][0][2] = data_D[idx][2]
+        DMI_like_coupl[idx][1][0] = data_D[idx][3]
+        DMI_like_coupl[idx][1][1] = data_D[idx][4]
+        DMI_like_coupl[idx][1][2] = data_D[idx][5]
 
-        DMI_like_coupl_neg_k[idx][0][0] = data_D[1][idx][6]
-        DMI_like_coupl_neg_k[idx][0][1] = data_D[1][idx][7]
-        DMI_like_coupl_neg_k[idx][0][2] = data_D[1][idx][8]
-        DMI_like_coupl_neg_k[idx][1][0] = data_D[1][idx][9]
-        DMI_like_coupl_neg_k[idx][1][1] = data_D[1][idx][10]
-        DMI_like_coupl_neg_k[idx][1][2] = data_D[1][idx][11]
+        DMI_like_coupl_neg_k[idx][0][0] = data_D[idx][0].conjugate()
+        DMI_like_coupl_neg_k[idx][0][1] = data_D[idx][1].conjugate()
+        DMI_like_coupl_neg_k[idx][0][2] = data_D[idx][2].conjugate()
+        DMI_like_coupl_neg_k[idx][1][0] = data_D[idx][3].conjugate()
+        DMI_like_coupl_neg_k[idx][1][1] = data_D[idx][4].conjugate()
+        DMI_like_coupl_neg_k[idx][1][2] = data_D[idx][5].conjugate()
 
 
     imaginary_unit = complex(0, 1)
@@ -194,7 +192,7 @@ def main():
 
     D_minus_mu_coefficients = []
 
-    for idx in range(num_kVec):
+    for idx in range(len(data_D)):
 
         # correct the magnon dispersion relation so that it includes anisotropy and the max number of spin excitations S
         mag_energy[idx] = 1.0/S * (mag_energy[idx] + 2*d_aniso)
@@ -220,8 +218,8 @@ def main():
                 D_mk_plus_mu = DMI_like_coupl_neg_k[idx][0][axis] + imaginary_unit * DMI_like_coupl_neg_k[idx][1][axis]
                 D_k_minus_mu = DMI_like_coupl[idx][0][axis] - imaginary_unit * DMI_like_coupl[idx][1][axis]
 
-                C_coeff +=  2*imaginary_unit/np.sqrt(2*S) * (pol_vec[idx][axis][branch]) * 3.8636 * np.sqrt(1.0 / (2 * atomicMass * ph_energy[idx][branch])) * D_k_minus_mu
-                D_coeff += -2*imaginary_unit/np.sqrt(2*S) * (pol_vec[idx][axis][branch]) * 3.8636 * np.sqrt(1.0 / (2 * atomicMass * ph_energy[idx][branch])) * D_mk_plus_mu
+                C_coeff +=  2*imaginary_unit/np.sqrt(2*S) * (pol_vec[idx][axis][branch]) * 3.8636 * np.sqrt(1.0 / (2 * atomic_mass * ph_energy[idx][branch])) * D_k_minus_mu
+                D_coeff += -2*imaginary_unit/np.sqrt(2*S) * (pol_vec[idx][axis][branch]) * 3.8636 * np.sqrt(1.0 / (2 * atomic_mass * ph_energy[idx][branch])) * D_mk_plus_mu
 
                 D_minus_mu_coeff[axis] = D_k_minus_mu
 
@@ -237,8 +235,12 @@ def main():
         x_values.append(idx)
         A_coefficients.append([ph_energy[idx][0], ph_energy[idx][1], ph_energy[idx][2]])
         B_coefficients.append(mag_energy[idx])
-        C_coefficients.append(C_coeff_all_branches)
-        D_coefficients.append(D_coeff_all_branches)
+        #C_coefficients.append(C_coeff_all_branches)
+        #D_coefficients.append(D_coeff_all_branches)
+        
+
+    C_coefficients = [data_D[idx][:3] for idx in range(len(data_D))]
+    D_coefficients = [data_D[idx][3:] for idx in range(len(data_D))]
 
     fig, axs = plt.subplots(ncols=1, nrows=3, sharex=True)
 
@@ -257,7 +259,7 @@ def main():
         
         
 
-    for branch in range(2, 3):
+    for branch in range(0, 3):
         wp = [wP(A_coefficients[idx][branch], B_coefficients[idx], C_coefficients[idx]
                  [branch], D_coefficients[idx][branch]).real for idx in range(len(x_values))]
         wm = [wM(A_coefficients[idx][branch], B_coefficients[idx], C_coefficients[idx]
@@ -265,11 +267,12 @@ def main():
 
 
         #axs[0].scatter(x_values, [(D_coefficients[idx][branch]).real for idx in range(len(x_values))], s=.5, label=str(branch+1)+ "D")
-        axs[0].plot(x_values, [(C_coefficients[idx][branch]*D_coefficients[idx][branch]).real for idx in range(len(x_values))], label=str(branch+1)+ "CD real")
-        axs[0].plot(x_values, [(C_coefficients[idx][branch]*D_coefficients[idx][branch]).imag for idx in range(len(x_values))], label=str(branch+1)+ "CD imag")
+        #axs[0].plot(x_values, [(C_coefficients[idx][branch]*D_coefficients[idx][branch]).real for idx in range(len(x_values))])
+        #axs[0].plot(x_values, [(C_coefficients[idx][branch]*D_coefficients[idx][branch]).imag for idx in range(len(x_values))], label=str(branch+1)+ "CD imag")
         #axs[0].scatter(x_values, [(C_coefficients[idx][branch]).imag for idx in range(len(x_values))], s=.5, label=str(branch+1)+ "C imag")
         #axs[0].scatter(x_values, [(C_coefficients[idx][branch]).real for idx in range(len(x_values))], s=.5, label=str(branch+1) + "C")
-        
+
+        axs[0].plot(x_values, [(data_D[idx][branch]* data_D[idx][branch+3]).real for idx in range(len(data_D))])
 
 
         # multiply the C and D coefficients: as they are complex conjugates, the product should be positive and real
