@@ -160,7 +160,7 @@ y_S_inv2_mat = mid_of_two(y_trans2_mode1, y_trans2_mode2)
 
 # plotting the transition matrix elements
 plt.style.use('science')
-fig, ax = plt.figure(figsize=(16/2.52, 7/2.52)), plt.gca()
+fig, ax = plt.figure(figsize=(12/2.52, 4/2.52)), plt.gca()
 
 
 from matplotlib.colors import Normalize
@@ -189,7 +189,7 @@ cbar.set_ticks([0, 1])
 cbar.set_ticklabels(['magnon-like', 'phonon-like'])
 plt.tight_layout()
 
-ax.set_ylabel(r'transformation matrix elements')
+ax.set_ylabel(r'matrix elements')
 
 plt.savefig('scripts/Figures/analytical/transition_matrix_elements_ana.png', dpi=600)
 plt.show()
@@ -199,7 +199,7 @@ plt.clf()
 
 # plotting the dispersion relation
 
-fig, axs = plt.subplots(ncols=2,nrows=1,figsize=(16/2.52,32/2.52), sharey=True)
+fig, axs = plt.subplots(ncols=2,nrows=1,figsize=(10/2.52,26/2.52), sharey=True)
 plt.style.use('science')
 
 
@@ -255,7 +255,7 @@ for i in range(len(mag)-1):
     ax2_inset.plot([x[i], x[i+1]], [y_longitudinal_minus[i], y_longitudinal_minus[i+1]], color=cmap(c4), linewidth=3)
 
 
-axs[0].set_title('transversal modes')
+axs[0].set_title('transverse modes')
 axs[1].set_title('longitudinal mode')
 
 ax1_inset.set_xlim(40,80)

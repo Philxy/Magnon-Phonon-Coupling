@@ -18,14 +18,19 @@ struct Diagonalization
     std::vector<double> eigenEnergies;
     Eigen::MatrixXcd eigenvectors;
     Eigen::MatrixXcd eigenvectors_inverse;
+    std::vector<std::complex<double>> dmiLike; // Dxx, Dxy, Dxz, Dyx, Dyy, Dyz
+
+    std::complex<double> A, B;
 
     Diagonalization(const std::vector<CouplingParameter> &couplingParameters, const PhononDispParam &phDispParam, const MagnonDispParam &magDispParam, const Vector3D &kVec);
 
     void calcCD();
+    void calcCD_new();
     void calcMatrixHamiltonian();
     void diagonalize();
-
-    void calcAngularMomentum(double time);
+    void calcDMILike();
+    void calcAB();
+    void calcAngularMomentum();
 
 
 };

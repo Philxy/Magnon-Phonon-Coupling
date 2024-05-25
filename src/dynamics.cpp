@@ -1064,7 +1064,7 @@ void IrreducibleBZ::init_k_prime()
     }
 
     */
-
+   
     k_prime_representatives_gammaM_minus_q = std::vector(irreducibleBZVectors.size(), std::vector<int>(irreducibleBZVectors.size()));
     k_prime_representatives_gammaZ_minus_q = std::vector(irreducibleBZVectors.size(), std::vector<int>(irreducibleBZVectors.size()));
     k_prime_representatives_gammaP_minus_q = std::vector(irreducibleBZVectors.size(), std::vector<int>(irreducibleBZVectors.size()));

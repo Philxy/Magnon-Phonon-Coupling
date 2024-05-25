@@ -4,6 +4,7 @@
 #include "../include/couplingParameters.h"
 #include "../include/diagonalization.h"
 #include "../include/dynamics.h"
+#include "../include/fourierTransform.h"
 
 #include <chrono>
 
@@ -27,18 +28,64 @@ int main()
     parameters.insert(parameters.end(), ij_uk_y_parameter.begin(), ij_uk_y_parameter.end());
     parameters.insert(parameters.end(), ij_uk_z_parameter.begin(), ij_uk_z_parameter.end());
 
-    ///*
+    
+
+    std::vector<PhononDispParam> phononDispersion = readPhononDispParams("Outputs/full_path_new/full_path_new_disp.txt");
+    
+    std::ofstream outFile("Outputs/full_path_new/Jsymm.txt");
+
+    if (!outFile.is_open())
+    {
+        std::cerr << "Failed to open the file for writing." << std::endl;
+        return 1; // Exit with an error code
+    }
+
+    outFile << "kx,ky,kz,J_k_x_x,J_k_x_y,J_k_x_z,J_k_y_x,J_k_y_y,J_k_y_z\n";
+
+
+    for (int idx = 0; idx < phononDispersion.size(); idx++)
+    {
+        if ( (idx % 1 != 0) )
+        {
+            continue;
+        }
+        Vector3D k(phononDispersion.at(idx).kx, phononDispersion.at(idx).ky, phononDispersion.at(idx).kz);
+
+        std::complex<double> J_k_xyx = FTJ(k.x, k.y, k.z, parametersX, X, Y, X);
+        std::complex<double> J_k_yxx = FTJ(k.x, k.y, k.z, parametersX, Y, X, X);
+
+        std::complex<double> J_k_xyy = FTJ(k.x, k.y, k.z, parametersY, X, Y, Y);
+        std::complex<double> J_k_yxy = FTJ(k.x, k.y, k.z, parametersY, Y, X, Y);
+
+        std::complex<double> J_k_xyz = FTJ(k.x, k.y, k.z, parametersZ, X, Y, Z);
+        std::complex<double> J_k_yxz = FTJ(k.x, k.y, k.z, parametersZ, Y, X, Z);
+
+        outFile << k.x << "," << k.y << "," << k.z << "," << (J_k_xyx + J_k_yxx)/2.0 << "," << (J_k_xyy + J_k_yxy)/2.0 << "," << (J_k_xyz + J_k_yxz)/2.0 << "\n";
+    }
+
+    outFile.close();
+
+    return 0;
+    
+
+    /*
 
     // _____________ Diagonalize the Hamiltonian _____________
 
-    std::vector<PhononDispParam> phononDispersion = readPhononDispParams("scripts/Data/gH1000/path.txt");
-    std::vector<MagnonDispParam> magnonDispersion = getMagnonDispFromPhononDisp(phononDispersion, "Parameters/J_bccFe.txt", "Outputs/numbersJIso.txt");
+    std::vector<PhononDispParam> phononDispersion = readPhononDispParams("Outputs/full_path_new/GP_phdisp.txt");
+    std::vector<MagnonDispParam> magnonDispersion = getMagnonDispFromPhononDisp(phononDispersion, "Parameters/J_bccFe.txt", "Outputs/full_path_new/mag.txt");
+
+
+    //std::vector<PhononDispParam> phononDispersion = readPhononDispParams("Outputs/wholeBZ/grid_formatted.txt");
+    //std::vector<MagnonDispParam> magnonDispersion = getMagnonDispFromPhononDisp(phononDispersion, "Parameters/J_bccFe.txt", "Outputs/intercept_acc.txt");
 
     // Pre-allocate space for output data, initializing with empty strings or appropriate default values
     std::vector<std::string> outEV(phononDispersion.size());
     std::vector<std::string> outCD(phononDispersion.size());
     std::vector<std::string> outEVectors(phononDispersion.size());
     std::vector<std::string> outAngularMomentum(phononDispersion.size());
+    std::vector<std::string> outDMILike(phononDispersion.size());
+    std::vector<std::string> outAB(phononDispersion.size());
 
 #pragma omp parallel for
     for (int idx = 0; idx < phononDispersion.size(); idx++)
@@ -52,27 +99,17 @@ int main()
         }
 
         Diagonalization diag(parameters, phononDispersion.at(idx), magnonDispersion.at(idx), kVec);
-        diag.calcCD();
+        diag.calcCD_new();
         diag.calcMatrixHamiltonian();
         diag.diagonalize();
-        diag.calcAngularMomentum(0.0);
+        diag.calcAngularMomentum();
+        diag.calcDMILike();
+        diag.calcAB();
 
-        // Some debug output
-        // std::cout << "k: \n";
-        // std::cout << phononDispersion.at(idx).kx << " " << phononDispersion.at(idx).ky << " " << phononDispersion.at(idx).kz << std::endl;
-        // std::cout << "Phonon energies: \n";
-        // std::cout << phononDispersion.at(idx).E[0] << " " << phononDispersion.at(idx).E[1] << " " << phononDispersion.at(idx).E[2] << std::endl;
-        // std::cout << "Pol vectors: \n";
-        // std::cout << phononDispersion.at(idx).polVectors[0][0] << " " << phononDispersion.at(idx).polVectors[0][1] << " " << phononDispersion.at(idx).polVectors[0][2] << std::endl;
-        // std::cout << phononDispersion.at(idx).polVectors[1][0] << " " << phononDispersion.at(idx).polVectors[1][1] << " " << phononDispersion.at(idx).polVectors[1][2] << std::endl;
-        // std::cout << phononDispersion.at(idx).polVectors[2][0] << " " << phononDispersion.at(idx).polVectors[2][1] << " " << phononDispersion.at(idx).polVectors[2][2] << std::endl;
-        // std::cout << "C vector: \n";
-        // std::cout << diag.C.at(0) << " " << diag.C.at(1) << " " << diag.C.at(2) << std::endl;
-        // std::cout << "D vector: \n";
-        // std::cout << diag.D.at(0) << " " << diag.D.at(1) << " " << diag.D.at(2) << std::endl;
+
 
         // Construct the strings for each output based on the computation
-        std::ostringstream evStream, cdStream, eVecStream, angMomStream;
+        std::ostringstream evStream, cdStream, eVecStream, angMomStream, dmiLikeStream, abStream;
 
         for (int i = 0; i < 7; i++)
         {
@@ -95,22 +132,35 @@ int main()
             }
         }
 
-
-        for (int nu = 0 ; nu < 8 ; nu++)
+        for (int nu = 0; nu < 8; nu++)
         {
             angMomStream << diag.angularMomentum.at(nu) << ",";
         }
+
+        // DMI like coupling parameters
+        for (int i = 0; i < 6; i++)
+        {
+            dmiLikeStream << diag.dmiLike.at(i) << " ";
+        }
+
+        // A and B vectors
+        abStream << diag.A << " " << diag.B;
+
         // Assign the constructed strings to the corresponding vectors
         outEV[idx] = evStream.str();
         outCD[idx] = cdStream.str();
         outEVectors[idx] = eVecStream.str();
         outAngularMomentum[idx] = angMomStream.str();
+        outDMILike[idx] = dmiLikeStream.str();
+        outAB[idx] = abStream.str();
     }
 
-    std::ofstream outFileEV("Outputs/gH_1000/Eigenenergies.txt");
-    std::ofstream outFileCD("Outputs/gH_1000/CD.txt");
-    std::ofstream outFileEVectors("Outputs/gH_1000/EVec.txt");
-    std::ofstream outFileAngularMomentum("Outputs/gH_1000/AngularMomentum.txt");
+    std::ofstream outFileEV("Outputs/full_path_new/eigenenergies_GP.txt");
+    std::ofstream outFileCD("Outputs/full_path_new/CD_GP.txt");
+    std::ofstream outFileEVectors("Outputs/full_path_new/eigenVectors_GP.txt");
+    std::ofstream outFileAngularMomentum("Outputs/full_path_new/angularMomentum_GP.txt");
+    std::ofstream outFileDMILike("Outputs/full_path_new/dmiLike_GP.txt");
+    std::ofstream outFileAB("Outputs/full_path_new/AB_GP.txt");
 
     for (const auto &line : outEV)
     {
@@ -129,13 +179,27 @@ int main()
         outFileAngularMomentum << line << "\n";
     }
 
+    for (const auto &line : outDMILike)
+    {
+        outFileDMILike << line << "\n";
+    }
+
+    for (const auto &line : outAB)
+    {
+        outFileAB << line << "\n";
+    }
+
     outFileAngularMomentum.close();
     outFileEVectors.close();
     outFileEV.close();
     outFileCD.close();
+    outFileDMILike.close();
+    outFileAB.close();
+
+    //  END OF DIAGONALIZATION
 
     return 0;
-    //*/
+    */
 
     // init irreducible BZ
     IrreducibleBZ irrBZ;
@@ -144,11 +208,11 @@ int main()
     irrBZ.readMultiplicities("Parameters/8x8x8/multiplicity_edit.txt");
     irrBZ.initSymmOp("Parameters/tu_graz_symm_bcc.txt");
 
-    // irrBZ.init_k_prime();
+    //irrBZ.init_k_prime();
     // irrBZ.save_k_primes_to_file("Outputs/k_primes.txt");
     irrBZ.init_k_primes_from_file("Outputs/k_primes.txt");
 
-    // irrBZ.initCoefficients(parameters, nFT);
+    //irrBZ.initCoefficients(parameters, nFT);
     // irrBZ.saveCoefficientsAsSqrtAbs("Outputs/coefficients.txt");
     irrBZ.readCoefficients("Outputs/coefficients.txt");
     irrBZ.initOccNumbers(2, 5); // 25.85, 30.0 (room temp) 10, 15

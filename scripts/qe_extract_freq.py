@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
 
 def extract_and_transform(input_file_path, output_file_path):
@@ -51,7 +52,7 @@ extract_and_transform(input_file_path, output_file_path)
 
 # opens a matdyn.modes file (QE output) and retrieves the frequencies and eigenvectors
 # Also performs energy conversion from THz to meV
-def extract_data_grouped_by_q_vector(filename):
+def extract_data_grouped_by_q_vector(filename, skip_lines=0):
 
     # Conversion factor from THz to meV
     freq_to_energy = 4.136
@@ -69,6 +70,10 @@ def extract_data_grouped_by_q_vector(filename):
         lines = file.readlines()
 
         for i, line in enumerate(lines):
+
+            if i < skip_lines:
+                continue
+            
             if q_pattern in line:
                 # Check if there's any collected data for the previous q vector
                 if temp_frequencies_and_vectors:
@@ -81,7 +86,7 @@ def extract_data_grouped_by_q_vector(filename):
 
                 # Extract and update the current q vector
                 q_vector_line = line.strip().split()
-                current_q_vector = [float(q_vector_line[j]) for j in [2, 3, 4]]
+                current_q_vector = [float(q_vector_line[j]) for j in [2, 3, 4]] # indices anpassen nach datei!
                 # convert units from 2pi/a to 1/a
                 current_q_vector = [v * 2 * np.pi for v in current_q_vector]
 
@@ -110,9 +115,68 @@ def extract_data_grouped_by_q_vector(filename):
     return data
 
 
+
+# opens a matdyn.modes file (QE output) and retrieves the frequencies and eigenvectors
+# Also performs energy conversion from THz to meV
+def extract_data_grouped_by_q_vector_dyn(filename):
+
+    # Conversion factor from THz to meV
+    freq_to_energy = 4.136
+
+    # Pattern to identify the line with q vector
+    q_pattern = "q ="
+    # Pattern to identify the line with frequency
+    freq_pattern = "freq ("
+    # Start with an empty list to collect the data
+    data = []
+    # Temporary storage for frequencies and vectors associated with the current q vector
+    frequencies_and_vectors = []
+
+    q_vectors = []
+
+    with open(filename, 'r') as file:
+        lines = file.readlines()
+
+        for i, line in enumerate(lines):
+            
+            if freq_pattern in line:
+                # Corrected: Extract frequency in THz correctly by taking the value before [THz]
+                freq_thz = float(line.split('=')[1].split('[')[0].strip())
+
+                # The vector is on the next line, extract relevant components
+                vector_line = lines[i+1].strip().replace('(',
+                                                         '').replace(')', '').split()
+                vector = [float(vector_line[j]) for j in [0, 2, 4]]
+
+                vector = [v for v in vector]
+
+                # Append frequency and vector to the temp storage
+                frequencies_and_vectors.append(
+                    {'freq_thz': freq_thz * freq_to_energy, 'vector': vector})
+
+    with open(filename, 'r') as file:
+        lines = file.readlines()
+
+        for i, line in enumerate(lines):
+            
+            if q_pattern in line:
+                
+                # Extract and update the current q vector
+                q_vector_line = line.strip().split()
+                current_q_vector = [float(q_vector_line[j]) for j in [3, 4, 5]] # indices anpassen nach datei!
+                # convert units from 2pi/a to 1/a
+                current_q_vector = [v * 2 * np.pi for v in current_q_vector]
+                q_vectors.append(current_q_vector)
+
+
+    for q in q_vectors:
+        data.append({'q_vector': q, 'entries': frequencies_and_vectors})
+
+    return data
+
 # Usage example:
 # Replace 'data.txt' with the path to your actual file
-data = extract_data_grouped_by_q_vector('scripts/Data/QE_Pol_Disp/8x8x8_irrBZ.txt')
+#data = extract_data_grouped_by_q_vector('scripts/Data/QE_Pol_Disp/8x8x8_irrBZ.txt')
 
 '''
 for item in data:
@@ -147,12 +211,54 @@ def write_data_to_file(data, filename):
             file.write(line + "\n")
 
 
-# Usage example:
-# Make sure this calls the appropriate function
-data = extract_data_grouped_by_q_vector(
-    'scripts/Data/gH_20000/bccfe.eig')
-write_data_to_file(
-    data, filename='scripts/Data/gH_20000/path_formatted.txt')
+# DIES HERE
+#data = extract_data_grouped_by_q_vector('scripts/Data/dyn20x20x20')
+#write_data_to_file(data, filename='Parameters/20x20x20.txt')
+
+data = extract_data_grouped_by_q_vector('Outputs/full_path_new/bccfe.eig')
+write_data_to_file(data, filename='Outputs/full_path_new/full_path_new_disp.txt')
+
+
+def extract_data_from_dir(directory_path,outfile):
+    # Initialize a list to hold the extracted data
+    all_data = []
+
+    of = open(outfile, 'w')
+
+    for filename in os.listdir(directory_path):
+        file_path = os.path.join(directory_path, filename)
+        if os.path.isfile(file_path):
+            print(f"Processing {filename}...")
+            data = extract_data_grouped_by_q_vector_dyn(file_path)
+
+            print(data)
+
+            for item in data:
+                # Start with the q vector
+                line_parts = [' '.join(map(str, item['q_vector']))]
+
+                # Add the frequencies
+                freqs = [str(entry['freq_thz']) for entry in item['entries']]
+                line_parts.extend(freqs)
+
+                # Add the vectors, concatenating components of each vector
+                vectors = [' '.join(map(str, entry['vector']))
+                        for entry in item['entries']]
+                line_parts.extend(vectors)
+
+                # Combine all parts into a single line
+                line = ' '.join(line_parts)
+                of.write(line + "\n")
+
+            all_data.extend(data)
+    
+
+
+
+
+dir = 'scripts/Data/dyn20x20x20'
+out_file = 'Parameters/20x20x20_disp.txt'
+data = extract_data_from_dir(dir,out_file)
 
 
 def plot_disp_from_file(filename):
@@ -188,4 +294,4 @@ def plot_disp_from_file(filename):
 
 # Example usage:
 # Replace 'formatted_data.txt' with the path to your actual formatted output file
-plot_disp_from_file('scripts/Data/QE_Pol_Disp/formatted_4x4x4_path_G_H.txt')
+#plot_disp_from_file('scripts/Data/QE_Pol_Disp/formatted_4x4x4_path_G_H.txt')

@@ -175,7 +175,7 @@ path_data = [[paths_xx, paths_xy, paths_xz], [paths_yx,paths_yy,paths_yz]]
 
 paths = np.linspace(0,1,len(paths_xx[0]))
 
-fig, axs = plt.subplots(ncols=6,nrows=2,figsize=(16/2.25,10/2.52))
+fig, axs = plt.subplots(ncols=6,nrows=2,figsize=(12/2.25,8/2.52))
 
 plt.subplots_adjust(wspace=0.06, hspace=0.15)
 
@@ -253,14 +253,8 @@ axs[1][5].set_yticks([-5,0], labels=['',''])
 #axs[0][0].set_ylim([-4E-6,5E-6])
 #axs[1][0].set_ylim([-4E-6,5E-6])
 
-
-
-
-axs[0][0].set_ylabel(r'$\mathrm{Im}\mathcal{D}^{x\mu}_\mathbf{k}$')
-axs[1][0].set_ylabel(r'$\mathrm{Im}\mathcal{D}^{y\mu}_\mathbf{k}$')
-
-
+axs[0][0].set_ylabel(r'$\mathrm{Im}\mathcal{D}^{x\mu}_\mathbf{k}$ ($\frac{\mathrm{meV}}{\mathrm{a.u.}}$)')
+axs[1][0].set_ylabel(r'$\mathrm{Im}\mathcal{D}^{y\mu}_\mathbf{k}$ ($\frac{\mathrm{meV}}{\mathrm{a.u.}}$)')
 axs[0][5].legend(title=r'Axis $\mu$')
-
-plt.savefig('scripts/Figures/ImD_bccFe.pdf')
+plt.savefig('scripts/Figures/ImD_bccFe.pdf') 
 plt.show()

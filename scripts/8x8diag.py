@@ -1,9 +1,9 @@
-import scienceplots
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import re
 from util import Power, Sqrt
+import scienceplots
 
 
 # Enable LaTeX text rendering globally
@@ -230,8 +230,8 @@ plt.show()
 
 # set up double plots
 # Setup figure and grids
-fig = plt.figure(figsize=(12, 4))  # Wider figure to accommodate both plots
-gs = fig.add_gridspec(1, 2, width_ratios=[1, 3])  # Width ratio between first and second plot
+fig = plt.figure(figsize=(16/2.52, 8/2.52))  # Wider figure to accommodate both plots
+gs = fig.add_gridspec(1, 2, width_ratios=[1, 3.5])  # Width ratio between first and second plot
 
 # First subplot
 ax1 = fig.add_subplot(gs[0])
@@ -249,7 +249,7 @@ for i in range(8):
     ax2.plot(x_coupl[:int(len(x_coupl)*0.12)], y_coupl[:int(len(x_coupl)*0.12)], color='tab:blue')
 
 # Inset for the second subplot
-axin1 = ax2.inset_axes([0.05, 0.45, 0.45, 0.5])
+axin1 = ax2.inset_axes([0.1, 0.45, 0.4, 0.5])
 for i in range(8):
     y_coupl = [np.abs(ev[i]) for ev in eigenenergies]
     axin1.plot(x_coupl[:int(len(x_coupl)*0.12)], y_coupl[:int(len(x_coupl)*0.12)], color='tab:blue', linewidth=1.2)

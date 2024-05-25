@@ -61,13 +61,13 @@ b_1 = 2*np.pi * np.cross(a2, a3) / np.dot(a1, np.cross(a2, a3))
 b_2 = 2*np.pi * np.cross(a3, a1) / np.dot(a1, np.cross(a2, a3))
 b_3 = 2*np.pi * np.cross(a1, a2) / np.dot(a1, np.cross(a2, a3))
 
-directory_path = 'scripts/Data/dyn_mat_8x8x8'
+directory_path = 'scripts/Data/dyn20x20x20'
 
-out_file = open('Parameters/dynMat_8x8x8.txt', 'w')
+out_file = open('Parameters/dynMat_20x20x20.txt', 'w')
 
 out_file.write('kx,ky,kz,Dxx,Dxy,Dxz,Dyx,Dyy,Dyz,Dzx,Dzy,Dzz\n')
 
-multiplicity_file = open('Parameters/multiplicity_8x8x8.txt', 'w')
+multiplicity_file = open('Parameters/multiplicity_20x20x20.txt', 'w')
 
 
 for filename in os.listdir(directory_path):

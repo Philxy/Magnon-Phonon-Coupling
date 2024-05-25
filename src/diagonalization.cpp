@@ -16,10 +16,14 @@ void Diagonalization::calcCD()
 
     for (int branch = 0; branch < 3; branch++)
     {
+        // std::cout << phDisp.polVectors[0][branch] * phDisp.polVectors[0][branch] + phDisp.polVectors[1][branch] * phDisp.polVectors[1][branch] + phDisp.polVectors[2][branch] * phDisp.polVectors[2][branch] << std::endl;
+        // std::cout << phDisp.polVectors[0][branch] << " " << phDisp.polVectors[1][branch] << " " << phDisp.polVectors[2][branch] << std::endl;
+        // std::cout << "____\n";
+
         for (int axis = 0; axis < 3; axis++)
         {
-            std::complex<double> D_plus = D_k_values_minus.D[0][axis] + i * D_k_values_minus.D[1][axis];
-            std::complex<double> D_minus = D_k_values.D[0][axis] - i * D_k_values.D[1][axis];
+            std::complex<double> D_plus = D_k_values_minus.D[axis][0] + i * D_k_values_minus.D[axis][1];
+            std::complex<double> D_minus = D_k_values.D[axis][0] - i * D_k_values.D[axis][1];
 
             double pol_vec_component = phDisp.polVectors[axis][branch];
 
@@ -28,6 +32,80 @@ void Diagonalization::calcCD()
         }
     }
     return;
+}
+
+void Diagonalization::calcDMILike()
+{
+    // Dxx, Dxy, Dxz, Dyx, Dyy, Dyz
+    DMILike dmiLike_plus_k(k.x, k.y, k.z, couplingParameters);
+
+    for (int mu = 0; mu < 3; mu++)
+    {
+        dmiLike.push_back(dmiLike_plus_k.D[X][mu]);
+    }
+
+    for (int mu = 0; mu < 3; mu++)
+    {
+        dmiLike.push_back(dmiLike_plus_k.D[Y][mu]);
+    }
+}
+
+void Diagonalization::calcCD_new()
+{
+    DMILike dmiLike_plus_k(k.x, k.y, k.z, couplingParameters);
+    DMILike dmiLike_minus_k(-k.x, -k.y, -k.z, couplingParameters);
+    const std::complex<double> i(0, 1);
+
+    std::complex<double> DPlus_minus_k[3];
+    std::complex<double> DMinus_plus_k[3];
+
+    for (int mu = 0; mu < 3; mu++)
+    {
+        DPlus_minus_k[mu] = dmiLike_minus_k.D[X][mu] + i * dmiLike_minus_k.D[Y][mu];
+        DMinus_plus_k[mu] = dmiLike_plus_k.D[X][mu] - i * dmiLike_plus_k.D[Y][mu];
+
+        // std::cout << DPlus_minus_k[mu] << " " << DMinus_plus_k[mu] << std::endl;
+    }
+
+    for (int branch = 0; branch < 3; branch++)
+    {
+        // std::cout << branch << " <- branch \n";
+        for (int axis = 0; axis < 3; axis++)
+        {
+
+            double pol_vec_component = phDisp.polVectors[axis][branch];
+            std::complex<double> C_add = 2.0 * i / sqrt(2 * S) * 3.8636 * DMinus_plus_k[axis] * pol_vec_component * sqrt(1 / (2 * atomicMass * phDisp.E[branch]));
+            std::complex<double> D_add = -2.0 * i / sqrt(2 * S) * 3.8636 * DPlus_minus_k[axis] * pol_vec_component * sqrt(1 / (2 * atomicMass * phDisp.E[branch]));
+            C.at(branch) += C_add;
+            D.at(branch) += D_add;
+            // std::cout << pol_vec_component << " " << D_add << std::endl;
+        }
+    }
+    return;
+}
+
+void Diagonalization::calcAB()
+{
+    std::complex<double> i(0, 1);
+    std::complex<double> A(0, 0);
+    std::complex<double> B(0, 0);
+    Eigen::Vector3cd chi_k1(phDisp.polVectors[0][0], phDisp.polVectors[1][0], phDisp.polVectors[2][0]);
+    Eigen::Vector3cd chi_k2(phDisp.polVectors[0][1], phDisp.polVectors[1][1], phDisp.polVectors[2][1]);
+    Eigen::Vector3cd chiP = chi_k1 + i * chi_k2;
+    Eigen::Vector3cd chiM = chi_k1 - i * chi_k2;
+
+    DMILike dmiLike(k.x, k.y, k.z, couplingParameters);
+
+    Eigen::Vector3cd DM(dmiLike.D[0][0] - i * dmiLike.D[1][0], dmiLike.D[0][1] - i * dmiLike.D[1][1], dmiLike.D[0][2] - i * dmiLike.D[1][2]);
+
+    A = i * 3.84 * sqrt(1 / (S * atomicMass * phDisp.E[0])) * (DM(0) * chiP(0) + DM(1) * chiP(1) + DM(2) * chiP(2));
+    B = i * 3.84 * sqrt(1 / (S * atomicMass * phDisp.E[1])) * (DM(0) * chiM(0) + DM(1) * chiM(1) + DM(2) * chiM(2));
+    this->A = A;
+    this->B = B;
+
+    // Alternatively (simplification along G-H path):
+    // this->A = dmiLike.D[1][0] - dmiLike.D[0][1] + i * (dmiLike.D[0][0] + dmiLike.D[1][1]);
+    // this->B = dmiLike.D[1][0] + dmiLike.D[0][1] + i * (dmiLike.D[0][0] - dmiLike.D[1][1]);
 }
 
 void Diagonalization::calcMatrixHamiltonian()
@@ -156,14 +234,14 @@ int getLeviLevita(int i, int j, int k)
     return 0;
 }
 
-void Diagonalization::calcAngularMomentum(double time)
+void Diagonalization::calcAngularMomentum()
 {
 
     Eigen::MatrixXcd matrixL = Eigen::MatrixXcd::Zero(8, 8);
     Eigen::MatrixXcd g = getMatrix_g();
     std::complex<double> i(0, 1);
 
-    double polVec = phDisp.polVectors[0][0] * phDisp.polVectors[2][1] - phDisp.polVectors[2][0] * phDisp.polVectors[0][1]; // phDisp.polVectors[1][2]; //
+    double polVec = phDisp.polVectors[2][2]; // phDisp.polVectors[1][2]; //
 
     assert(matrixL.rows() == 8);
     assert(matrixL.cols() == 8);
@@ -180,12 +258,11 @@ void Diagonalization::calcAngularMomentum(double time)
     matrixL(4, 1) = polVec;
     matrixL(5, 0) = -polVec;
 
-    matrixL(1, 4) = polVec;
-    matrixL(5, 4) = -polVec;
-
     matrixL(0, 5) = -polVec;
-    matrixL(4, 5) = polVec;
+    matrixL(1, 4) = polVec;
 
+    matrixL(5, 4) = -polVec;
+    matrixL(4, 5) = polVec;
 
     auto D = i / 2.0 * eigenvectors_inverse * matrixL * eigenvectors;
 
@@ -195,9 +272,9 @@ void Diagonalization::calcAngularMomentum(double time)
     // std::cout << D << std::endl;
     // std::cout << polVec << std::endl;
 
-    for (int i = 0; i < 8; i++)
+    for (int j = 0; j < 8; j++)
     {
-        angularMomentum.push_back(D(i,i));
+        angularMomentum.push_back(D(j, j));
     }
 
     return;

@@ -40,6 +40,59 @@ std::complex<double> FTD(double kx, double ky, double kz, const std::vector<Coup
     return result;
 }
 
+// calculates D^{\nu\mu}_{\v{k}}
+std::complex<double> DMIFT(double kx, double ky, double kz, const std::vector<CouplingParameter> &params, Axis nu, Axis mu)
+{
+    std::complex<double> result(0, 0);
+    const std::complex<double> i(0.0, 1.0);
+
+    for (int idx = 0; idx < params.size(); idx++)
+    {
+        const CouplingParameter &p = params.at(idx);
+
+        if (p.displacementDirection != mu)
+        {
+            continue;
+        }
+
+        double D = 0;
+
+        switch (nu)
+        {
+        case X:
+            D = 0.5 * (p.J[Y][Z] - p.J[Z][Y]);
+            break;
+        case Y:
+            D = 0.5 * (p.J[X][Z] - p.J[Z][X]);
+            break;
+        case Z:
+            D = 0.5 * (p.J[X][Y] - p.J[Y][X]);
+            break;
+        default:
+            continue;
+        }
+        result += D * std::exp(i * (kx * p.x_ij + ky * p.y_ij + kz * p.z_ij) + i * (kx * p.x_ki + ky * p.y_ki + kz * p.z_ki));
+    }
+    return result;
+}
+
+DMILike::DMILike(double kx, double ky, double kz, const std::vector<CouplingParameter> &parameters)
+{
+    this->kx = kx;
+    this->ky = ky;
+    this->kz = kz;
+
+    std::vector<Axis> allAxis = {X, Y, Z};
+
+    for (Axis nu : allAxis)
+    {
+        for (Axis mu : allAxis)
+        {
+            this->D[nu][mu] = DMIFT(kx, ky, kz, parameters, nu, mu);
+        }
+    }
+}
+
 DMILikeCouplingParam::DMILikeCouplingParam(double kx, double ky, double kz, const std::vector<CouplingParameter> &parameters)
 {
     this->kx = kx;
@@ -99,6 +152,24 @@ std::complex<double> FTD(double kx1, double ky1, double kz1, double kx2, double 
     return result;
 }
 */
+
+std::complex<double> FTJ(double kx, double ky, double kz, const std::vector<CouplingParameter> &params, Axis alpha, Axis beta, Axis mu)
+{
+    std::complex<double> result(0, 0);
+    const std::complex<double> i(0.0, 1.0);
+
+    for (CouplingParameter p : params)
+    {
+        if (mu !=  p.displacementDirection)
+        {
+            continue;  
+        }
+
+        result += p.J[alpha][beta] * std::exp(-i * (kx * p.x_ij + ky * p.y_ij + kz * p.z_ij)) * std::exp(-i * (kx * p.x_ki + ky * p.y_ki + kz * p.z_ki));
+    }
+
+    return result;
+}
 
 std::complex<double> FTJiso(double kx, double ky, double kz, const std::vector<CouplingParameter> &params)
 {
