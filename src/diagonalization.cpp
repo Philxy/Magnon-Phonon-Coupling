@@ -34,6 +34,39 @@ void Diagonalization::calcCD()
     return;
 }
 
+void Diagonalization::calcAngularMomentumFromEigenvectors()
+{
+
+    std::vector<Eigen::Vector3cd> complex_pol_vectors;
+
+    for (int row = 0; row < 8; row++)
+    {
+        Eigen::Vector3cd pol_vector;
+
+        for (int col = 4; col < 7; col++)
+        {
+            pol_vector(col - 4) = eigenvectors_inverse(row, col);
+        }
+        complex_pol_vectors.push_back(pol_vector);
+
+        for (int col = 0; col < 3; col++)
+        {
+            pol_vector(col) = eigenvectors_inverse(row, col);
+        }
+        // complex_pol_vectors.push_back(pol_vector);
+    }
+
+    for (Eigen::Vector3cd pol_vec : complex_pol_vectors)
+    {
+        Eigen::Vector3d real_part = pol_vec.real();
+        Eigen::Vector3d imag_part = pol_vec.imag();
+        Eigen::Vector3d angul_momentum = 2 * real_part.cross(imag_part);
+        angularMomentumFromEigenvectors.push_back(angul_momentum);
+    }
+
+    return;
+}
+
 void Diagonalization::calcDMILike()
 {
     // Dxx, Dxy, Dxz, Dyx, Dyy, Dyz
@@ -50,38 +83,46 @@ void Diagonalization::calcDMILike()
     }
 }
 
-void Diagonalization::calcCD_new()
+// Calculates the DMI-like coefficients projected onto the polarization vectors, termed C and D or D_minus and D_plus
+void Diagonalization::calculateCD(bool dmiOnly)
 {
-    DMILike dmiLike_plus_k(k.x, k.y, k.z, couplingParameters);
-    DMILike dmiLike_minus_k(-k.x, -k.y, -k.z, couplingParameters);
+
     const std::complex<double> i(0, 1);
 
-    std::complex<double> DPlus_minus_k[3];
-    std::complex<double> DMinus_plus_k[3];
-
-    for (int mu = 0; mu < 3; mu++)
+    if (dmiOnly)
     {
-        DPlus_minus_k[mu] = dmiLike_minus_k.D[X][mu] + i * dmiLike_minus_k.D[Y][mu];
-        DMinus_plus_k[mu] = dmiLike_plus_k.D[X][mu] - i * dmiLike_plus_k.D[Y][mu];
 
-        // std::cout << DPlus_minus_k[mu] << " " << DMinus_plus_k[mu] << std::endl;
-    }
+        DMILike dmiLike_plus_k(k.x, k.y, k.z, couplingParameters);
+        DMILike dmiLike_minus_k(-k.x, -k.y, -k.z, couplingParameters);
 
-    for (int branch = 0; branch < 3; branch++)
-    {
-        // std::cout << branch << " <- branch \n";
-        for (int axis = 0; axis < 3; axis++)
+        std::complex<double> DPlus_minus_k[3];
+        std::complex<double> DMinus_plus_k[3];
+
+        for (int mu = 0; mu < 3; mu++)
         {
-
-            double pol_vec_component = phDisp.polVectors[axis][branch];
-            std::complex<double> C_add = 2.0 * i / sqrt(2 * S) * 3.8636 * DMinus_plus_k[axis] * pol_vec_component * sqrt(1 / (2 * atomicMass * phDisp.E[branch]));
-            std::complex<double> D_add = -2.0 * i / sqrt(2 * S) * 3.8636 * DPlus_minus_k[axis] * pol_vec_component * sqrt(1 / (2 * atomicMass * phDisp.E[branch]));
-            C.at(branch) += C_add;
-            D.at(branch) += D_add;
-            // std::cout << pol_vec_component << " " << D_add << std::endl;
+            DPlus_minus_k[mu] = dmiLike_minus_k.D[X][mu] + i * dmiLike_minus_k.D[Y][mu];
+            DMinus_plus_k[mu] = dmiLike_plus_k.D[X][mu] - i * dmiLike_plus_k.D[Y][mu];
         }
+
+        for (int branch = 0; branch < 3; branch++)
+        {
+            for (int axis = 0; axis < 3; axis++)
+            {
+                double pol_vec_component = phDisp.polVectors[axis][branch];
+                std::complex<double> C_add = 2.0 * i / sqrt(2 * S) * 3.8636 * DMinus_plus_k[axis] * pol_vec_component * sqrt(1 / (2 * atomicMass * phDisp.E[branch]));
+                std::complex<double> D_add = -2.0 * i / sqrt(2 * S) * 3.8636 * DPlus_minus_k[axis] * pol_vec_component * sqrt(1 / (2 * atomicMass * phDisp.E[branch]));
+                C.at(branch) += C_add;
+                D.at(branch) += D_add;
+            }
+        }
+        return;
+        // also include the contribution of the anisotropy
     }
-    return;
+    else
+    {
+        // to be implemented ... (straight forward)
+        return;
+    }
 }
 
 void Diagonalization::calcAB()
@@ -108,6 +149,7 @@ void Diagonalization::calcAB()
     // this->B = dmiLike.D[1][0] + dmiLike.D[0][1] + i * (dmiLike.D[0][0] - dmiLike.D[1][1]);
 }
 
+// Calculates the matrix representation of the Hamiltonian and prepares it for diagonalization using the generalized Bogoliubov transformation as outlined by White et al. (2014)
 void Diagonalization::calcMatrixHamiltonian()
 {
     Eigen::MatrixXd g = getMatrix_g();
@@ -123,15 +165,6 @@ void Diagonalization::calcMatrixHamiltonian()
 
     for (int branch = 0; branch < 3; branch++)
     {
-
-        /*
-        if (branch == 3)
-        {
-            C.at(branch) = 0;
-            D.at(branch) = 0;
-        }
-        */
-
         // Diagonal phonon elements
         double E_k_branch = phDisp.E[branch];
         matrixHamiltonian(branch, branch) = E_k_branch;
@@ -174,6 +207,7 @@ void Diagonalization::calcMatrixHamiltonian()
         */
     }
 
+    // Magnon energy
     double E_k_mag = magDisp.energy;
     matrixHamiltonian(3, 3) = E_k_mag;
     matrixHamiltonian(7, 7) = E_k_mag;
@@ -208,7 +242,7 @@ Eigen::MatrixXd getMatrix_g()
 /*
 Performs the diagonalization of gH
 - If V is a matrix with the eigenvectors as its columns
-  and D a diagonal matrix withe the eigenvalues on the diagonal
+  and D a diagonal matrix with the eigenvalues on the diagonal
   then gH V = V D -> V^-1 gH V = D
 */
 void Diagonalization::diagonalize()
@@ -227,11 +261,6 @@ void Diagonalization::diagonalize()
 
         eigenEnergies.push_back(realPart);
     }
-}
-
-int getLeviLevita(int i, int j, int k)
-{
-    return 0;
 }
 
 void Diagonalization::calcAngularMomentum()

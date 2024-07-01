@@ -17,7 +17,7 @@ def parse_complex(tuple_str):
 
 def retrieve_data_from_file(file_path):
 
-    rest = []
+    rest = []   
 
     with open(file_path, 'r') as file:
         file.readline()
@@ -41,7 +41,13 @@ filename_mag = "Outputs/numbersJIso_20x20.txt"
 #eigenenergies = retrieve_data_from_file(filename8x8)
 
 
-S_matrix = retrieve_data_from_file("Outputs/GHx/eigenVectors_GHy.txt")
+S_matrix = retrieve_data_from_file("Outputs/GHxyz/eigenVectors_GHz.txt")
+
+for i in range(8):
+    for j in range(8):
+
+        print(S_matrix[100][i+j*8])
+    print("\n")
 
 
 S_inv_matrices = [np.linalg.inv(
