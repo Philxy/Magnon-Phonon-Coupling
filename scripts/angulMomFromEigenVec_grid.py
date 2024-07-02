@@ -1,9 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import scienceplots
+from scipy.interpolate import griddata
 
+plt.style.use('science')
 
-data_ev = "Outputs/Grid/ang_eig_fromEV.txt"
-data_phonon = "Outputs/Grid/grid_formatted.txt"
+data_ev = "Outputs/Grid/ang_eig_fromEV2.txt"
+data_phonon = "Outputs/Grid/grid_acc2_formatted.txt"
 
 L = []
 kVec = []
@@ -50,12 +53,11 @@ assert len(L) == len(kVec)
 
 
 
-fig = plt.figure()
-ax = fig.add_subplot(projection='3d')
 
 
-kx = [k[0] for k in kVec]
-kz = [k[2] for k in kVec]
+
+kx = [k[0]/(2*np.pi) for k in kVec]
+kz = [k[2]/(2*np.pi) for k in kVec]
 
 Lx_all_modes = []
 Ly_all_modes = []
@@ -72,15 +74,99 @@ for i in range(len(L)):
     Lz_all_modes.append([Lz[j] for j in range(8)])
 
 
-for j in range(8):
+"""
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+
+for j in [2]:
     Lx_point = [Lx_all_modes[i][j] for i in range(len(L))]
     Ly_point = [Ly_all_modes[i][j] for i in range(len(L))]
     Lz_point = [Lz_all_modes[i][j] for i in range(len(L))]
 
-    ax.scatter(kx, kz, Lz_point, c=Lz_point, cmap='coolwarm', s=10)
+    if j == 1:
+        Lz_point = [np.abs(Lz_point[i]) for i in range(len(L))]
 
-ax.set_xlim(-.5, .5)
-ax.set_xlabel('$k_x$')
-ax.set_zlabel('$k_z$')
+    if j == 2:
+        Lz_point = [-np.abs(Lz_point[i]) for i in range(len(L))]
+        pass
+    if j == 3:
+        Lz_point = [np.abs(Lz_point[i]) for i in range(len(L))]
 
+
+    kx = np.array(kx)
+    kz = np.array(kz)
+    Lz_point = np.array(Lz_point)
+
+    
+
+    # Create grid data for contour plot
+    xi = np.linspace(kx.min(), kx.max(), 100)
+    zi = np.linspace(kz.min(), kz.max(), 100)
+    xi, zi = np.meshgrid(xi, zi)
+
+    # Interpolate the data
+    Lz_interpolated = griddata((kx, kz), Lz_point, (xi, zi), method='cubic')
+
+    fig = plt.figure()
+    ax = fig.add_subplot(projection='3d')
+    ax.set_xlabel('$k_x$ ($2\pi/a$)')
+    ax.set_ylabel('$k_z$ ($2\pi/a$)')
+    ax.set_zlabel(r'angular momentum ($\hbar$)')
+    ax.set_zlim(-1, 1)
+
+    # Plotting the surface
+    surf = ax.plot_surface(xi, zi, Lz_interpolated, cmap='coolwarm', edgecolor='none', norm=plt.Normalize(-1,1))
+
+    # Adding a color bar
+    cbar = fig.colorbar(surf, ax=ax, shrink=0.5, aspect=5)
+    cbar.set_label('angular momentum ($\hbar$)')
+
+    plt.show()
+"""
+
+
+fig, axs = plt.subplots(2, 2, figsize=(12/2.52,16/2.52), sharex=True, sharey=True)
+
+for j in [0,1,2,3]:
+    Lx_point = [Lx_all_modes[i][j] for i in range(len(L))]
+    Ly_point = [Ly_all_modes[i][j] for i in range(len(L))]
+    Lz_point = [Lz_all_modes[i][j] for i in range(len(L))]
+
+    kx = np.array(kx)
+    kz = np.array(kz)
+    Lz_point = np.array(Lz_point)
+
+    if j == 3:
+        Lz_point = [np.abs(Lz_point[i]) for i in range(len(L))]
+        axs[0][0].scatter(kx, kz, c=Lz_point, cmap='coolwarm', s=10, marker='s', norm=plt.Normalize(-1,1))
+    if j == 1:
+        Lz_point = [np.abs(Lz_point[i]) for i in range(len(L))]
+        axs[0][1].scatter(kx, kz, c=Lz_point, cmap='coolwarm', s=10, marker='s', norm=plt.Normalize(-1,1))
+    if j == 2:
+        Lz_point = [-np.abs(Lz_point[i]) for i in range(len(L))]
+        axs[1][0].scatter(kx, kz, c=Lz_point, cmap='coolwarm', s=10, marker='s', norm=plt.Normalize(-1,1))
+    if j == 0:
+        Lz_point = [np.abs(Lz_point[i]) for i in range(len(L))]
+        axs[1][1].scatter(kx, kz, c=Lz_point, cmap='coolwarm', s=10, marker='s', norm=plt.Normalize(-1,1))
+
+
+
+axs[1][0].set_xlabel('$k_x$ ($2\pi/a$)')
+axs[1][0].set_ylabel('$k_z$ ($2\pi/a$)')
+
+axs[0][0].set_ylabel('$k_z$ ($2\pi/a$)')
+axs[1][1].set_xlabel('$k_x$ ($2\pi/a$)')
+
+for i in range(2):
+    for j in range(2):
+        axs[i][j].set_xlim(-0.1,0.1)
+        axs[i][j].set_ylim(-0.2,0.2)
+        axs[i][j].set_xticks([-0.05,0,0.05])
+        axs[i][j].set_yticks([-0.1,0,0.1])
+
+
+plt.colorbar(plt.cm.ScalarMappable(norm=plt.Normalize(-1,1), cmap='coolwarm'), ax=axs, label='angular momentum ($\hbar$)')
+
+plt.tight_layout()
+plt.savefig("scripts/Figures/ang_eig_fromEV2.png", dpi=500)
 plt.show()

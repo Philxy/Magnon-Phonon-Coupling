@@ -1,16 +1,19 @@
 import numpy as np
 
 
-step_width = 0.005
+step_width = 0.002
 
-grid_size = 0.2
+grid_size_z = 0.2
+grid_size_x = 0.1
 
 
 k_points = []
 
 
-for z in np.arange(-grid_size,grid_size,step_width):
-    for x in np.arange(-grid_size,grid_size,step_width):
+for z in np.arange(-grid_size_z,grid_size_z,step_width):
+    for x in np.arange(-grid_size_x,grid_size_x,step_width):
+        if x == 0 and z == 0:
+            continue
         k = [x, 0, z]
         k_points.append(k)
 

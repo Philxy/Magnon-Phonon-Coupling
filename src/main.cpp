@@ -84,7 +84,7 @@ int main()
 
     // _____________ Diagonalize the Hamiltonian _____________
 
-    std::vector<PhononDispParam> phononDispersion = readPhononDispParams("Outputs/Grid/grid_formatted.txt");                                          // read the phonon dispersion from the file
+    std::vector<PhononDispParam> phononDispersion = readPhononDispParams("Outputs/Grid/grid_acc2_formatted.txt");                                          // read the phonon dispersion from the file
     std::vector<MagnonDispParam> magnonDispersion = getMagnonDispFromPhononDisp(phononDispersion, "Parameters/J_bccFe.txt", "Outputs/Grid/mag.txt"); // calculate the magon dispersion given for the k vectors of the phonon dispersion
 
     // std::vector<PhononDispParam> phononDispersion = readPhononDispParams("Outputs/wholeBZ/grid_formatted.txt");
@@ -182,13 +182,13 @@ int main()
 
     // Write the output data to files
 
-    std::ofstream outFileEV("Outputs/Grid/ev.txt");
-    std::ofstream outFileCD("Outputs/Grid/CD.txt");
-    std::ofstream outFileEVectors("Outputs/Grid/eig_vec.txt");
-    std::ofstream outFileAngularMomentum("Outputs/Grid/ang.txt");
-    std::ofstream outFileDMILike("Outputs/Grid/DMIlike.txt");
-    std::ofstream outFileAB("Outputs/Grid/AB.txt");
-    std::ofstream outFileAngularMomentumFromEigenvectors("Outputs/Grid/ang_eig_fromEV.txt");
+    std::ofstream outFileEV("Outputs/Grid/ev2.txt");
+    std::ofstream outFileCD("Outputs/Grid/CD2.txt");
+    std::ofstream outFileEVectors("Outputs/Grid/eig_vec2.txt");
+    std::ofstream outFileAngularMomentum("Outputs/Grid/ang2.txt");
+    std::ofstream outFileDMILike("Outputs/Grid/DMIlike2.txt");
+    std::ofstream outFileAB("Outputs/Grid/AB2.txt");
+    std::ofstream outFileAngularMomentumFromEigenvectors("Outputs/Grid/ang_eig_fromEV2.txt");
 
     for (const auto &line : outEV)
     {
