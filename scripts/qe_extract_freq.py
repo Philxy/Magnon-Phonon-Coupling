@@ -215,8 +215,8 @@ def write_data_to_file(data, filename):
 #data = extract_data_grouped_by_q_vector('scripts/Data/dyn20x20x20')
 #write_data_to_file(data, filename='Parameters/20x20x20.txt')
 
-data = extract_data_grouped_by_q_vector('Outputs/full_path_new/bccfe.eig')
-write_data_to_file(data, filename='Outputs/full_path_new/full_path_new_disp.txt')
+data = extract_data_grouped_by_q_vector('Parameters/grid.eig')
+write_data_to_file(data, filename='Parameters/grid_formatted.txt')
 
 
 def extract_data_from_dir(directory_path,outfile):
