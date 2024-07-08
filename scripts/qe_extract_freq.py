@@ -211,12 +211,10 @@ def write_data_to_file(data, filename):
             file.write(line + "\n")
 
 
-# DIES HERE
-#data = extract_data_grouped_by_q_vector('scripts/Data/dyn20x20x20')
-#write_data_to_file(data, filename='Parameters/20x20x20.txt')
+# Turns a file containing QE's output of frequencies and eigenvectors into my format
 
-data = extract_data_grouped_by_q_vector('Outputs/Grid/grid_acc2.eig')
-write_data_to_file(data, filename='Outputs/Grid/grid_acc2_formatted.txt')
+data = extract_data_grouped_by_q_vector('Outputs/Diag_Grid/bccfe_acc.eig')
+write_data_to_file(data, filename='Outputs/Diag_Grid/diag_grid_ph_disp_acc.txt')
 
 
 def extract_data_from_dir(directory_path,outfile):
@@ -226,6 +224,7 @@ def extract_data_from_dir(directory_path,outfile):
     of = open(outfile, 'w')
 
     for filename in os.listdir(directory_path):
+        print(filename)
         file_path = os.path.join(directory_path, filename)
         if os.path.isfile(file_path):
             print(f"Processing {filename}...")
@@ -233,7 +232,14 @@ def extract_data_from_dir(directory_path,outfile):
 
             print(data)
 
-            for item in data:
+            for item_count, item in enumerate(data):
+
+                # the following condition prevents the last item from being written to the file, since the qe output files contain the same data twice
+                # this does not account obviously for the case where there is only one item in the list
+                if len(data) > 1 and item_count == len(data)-1:
+                    continue
+
+
                 # Start with the q vector
                 line_parts = [' '.join(map(str, item['q_vector']))]
 
@@ -254,6 +260,8 @@ def extract_data_from_dir(directory_path,outfile):
     
 
 
+data = extract_data_from_dir('Parameters/dyn20x20x20/','Parameters/20x20x20_ph_disp.txt')
+#write_data_to_file(data, filename='Parameters/20x20x20_ph_disp.txt')
 
 
 dir = 'scripts/Data/dyn20x20x20'

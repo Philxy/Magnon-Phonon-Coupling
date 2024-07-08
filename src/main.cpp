@@ -80,12 +80,15 @@ int main()
 
    */
 
+    // ____ Calculate the magnon dispersion based on a given phonon dispersion ____
+
+
     ///*
 
     // _____________ Diagonalize the Hamiltonian _____________
 
-    std::vector<PhononDispParam> phononDispersion = readPhononDispParams("Outputs/Grid/grid_acc2_formatted.txt");                                          // read the phonon dispersion from the file
-    std::vector<MagnonDispParam> magnonDispersion = getMagnonDispFromPhononDisp(phononDispersion, "Parameters/J_bccFe.txt", "Outputs/Grid/mag.txt"); // calculate the magon dispersion given for the k vectors of the phonon dispersion
+    std::vector<PhononDispParam> phononDispersion = readPhononDispParams("Parameters/20x20x20_disp.txt");                                          // read the phonon dispersion from the file
+    std::vector<MagnonDispParam> magnonDispersion = getMagnonDispFromPhononDisp(phononDispersion, "Parameters/J_bccFe.txt", "Outputs/20x20x20/mag.txt"); // calculate the magon dispersion given for the k vectors of the phonon dispersion
 
     // std::vector<PhononDispParam> phononDispersion = readPhononDispParams("Outputs/wholeBZ/grid_formatted.txt");
     // std::vector<MagnonDispParam> magnonDispersion = getMagnonDispFromPhononDisp(phononDispersion, "Parameters/J_bccFe.txt", "Outputs/intercept_acc.txt");
@@ -182,13 +185,13 @@ int main()
 
     // Write the output data to files
 
-    std::ofstream outFileEV("Outputs/Grid/ev2.txt");
-    std::ofstream outFileCD("Outputs/Grid/CD2.txt");
-    std::ofstream outFileEVectors("Outputs/Grid/eig_vec2.txt");
-    std::ofstream outFileAngularMomentum("Outputs/Grid/ang2.txt");
-    std::ofstream outFileDMILike("Outputs/Grid/DMIlike2.txt");
-    std::ofstream outFileAB("Outputs/Grid/AB2.txt");
-    std::ofstream outFileAngularMomentumFromEigenvectors("Outputs/Grid/ang_eig_fromEV2.txt");
+    std::ofstream outFileEV("Outputs/20x20x20/ev.txt");
+    std::ofstream outFileCD("Outputs/20x20x20/CD.txt");
+    std::ofstream outFileEVectors("Outputs/20x20x20/eig_vec.txt");
+    std::ofstream outFileAngularMomentum("Outputs/20x20x20/ang.txt");
+    std::ofstream outFileDMILike("Outputs/20x20x20/DMIlike.txt");
+    std::ofstream outFileAB("Outputs/20x20x20/AB.txt");
+    std::ofstream outFileAngularMomentumFromEigenvectors("Outputs/20x20x20/ang_eig_fromEV.txt");
 
     for (const auto &line : outEV)
     {

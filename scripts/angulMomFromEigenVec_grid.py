@@ -5,8 +5,8 @@ from scipy.interpolate import griddata
 
 plt.style.use('science')
 
-data_ev = "Outputs/Grid/ang_eig_fromEV2.txt"
-data_phonon = "Outputs/Grid/grid_acc2_formatted.txt"
+data_ev = "Outputs/Diag_Grid/ang_eig_fromEV_acc.txt"
+data_phonon = "Outputs/Diag_Grid/diag_grid_ph_disp_acc.txt"
 
 L = []
 kVec = []
@@ -57,6 +57,7 @@ assert len(L) == len(kVec)
 
 
 kx = [k[0]/(2*np.pi) for k in kVec]
+ky = [k[1]/(2*np.pi) for k in kVec]
 kz = [k[2]/(2*np.pi) for k in kVec]
 
 Lx_all_modes = []
@@ -72,7 +73,6 @@ for i in range(len(L)):
     Lx_all_modes.append([Lx[j] for j in range(8)])
     Ly_all_modes.append([Ly[j] for j in range(8)])
     Lz_all_modes.append([Lz[j] for j in range(8)])
-
 
 """
 fig = plt.figure()
@@ -94,6 +94,7 @@ for j in [2]:
 
 
     kx = np.array(kx)
+    ky = np.array(ky)
     kz = np.array(kz)
     Lz_point = np.array(Lz_point)
 
@@ -101,6 +102,7 @@ for j in [2]:
 
     # Create grid data for contour plot
     xi = np.linspace(kx.min(), kx.max(), 100)
+    yi = np.linspace(ky.min(), ky.max(), 100)
     zi = np.linspace(kz.min(), kz.max(), 100)
     xi, zi = np.meshgrid(xi, zi)
 
@@ -124,8 +126,7 @@ for j in [2]:
     plt.show()
 """
 
-
-fig, axs = plt.subplots(2, 2, figsize=(12/2.52,16/2.52), sharex=True, sharey=True)
+fig, axs = plt.subplots(2, 2, figsize=(14/2.52,14/2.52), sharex=True, sharey=True)
 
 for j in [0,1,2,3]:
     Lx_point = [Lx_all_modes[i][j] for i in range(len(L))]
@@ -160,13 +161,39 @@ axs[1][1].set_xlabel('$k_x$ ($2\pi/a$)')
 for i in range(2):
     for j in range(2):
         axs[i][j].set_xlim(-0.1,0.1)
-        axs[i][j].set_ylim(-0.2,0.2)
+        axs[i][j].set_ylim(-0.1,0.1)
         axs[i][j].set_xticks([-0.05,0,0.05])
         axs[i][j].set_yticks([-0.1,0,0.1])
 
 
-plt.colorbar(plt.cm.ScalarMappable(norm=plt.Normalize(-1,1), cmap='coolwarm'), ax=axs, label='angular momentum ($\hbar$)')
+plt.colorbar(plt.cm.ScalarMappable(norm=plt.Normalize(-1,1), cmap='coolwarm'), ax=axs, label='angular momentum ($\hbar$)', pad=-.45)
 
 plt.tight_layout()
-plt.savefig("scripts/Figures/ang_eig_fromEV2.png", dpi=500)
+plt.savefig("scripts/Figures/ang_eig_fromEV_diag_acc.png", dpi=500)
 plt.show()
+plt.clf()
+
+
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+
+
+
+for j in [3]:
+    Lx_point = [Lx_all_modes[i][j] for i in range(len(L))]
+    Ly_point = [Ly_all_modes[i][j] for i in range(len(L))]
+    Lz_point = [Lz_all_modes[i][j] for i in range(len(L))]
+
+    kx = np.array(kx)
+    ky = np.array(ky)
+    kz = np.array(kz)
+
+
+    ax.set_xlim(-0.1,0.1)
+    ax.set_ylim(-0.1,0.1)
+    ax.set_zlim(-0.1,0.1)
+
+    ax.scatter(kx, ky, kz, c=Lz_point, cmap='coolwarm', marker='s', norm=plt.Normalize(-1,1))
+
+
+    plt.show()
