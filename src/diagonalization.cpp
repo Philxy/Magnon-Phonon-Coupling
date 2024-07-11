@@ -116,11 +116,35 @@ void Diagonalization::calculateCD(bool dmiOnly)
             }
         }
         return;
-        // also include the contribution of the anisotropy
     }
     else
     {
-        // to be implemented ... (straight forward)
+        // Includes the contribution of the anisotropy and the DM
+
+        std::complex<double> J_xz_plus[3] = {0, 0, 0};
+        std::complex<double> J_yz_plus[3] = {0, 0, 0};
+        std::complex<double> J_xz_minus[3] = {0, 0, 0};
+        std::complex<double> J_yz_minus[3] = {0, 0, 0};
+
+        for (Axis ax : {X, Y, Z})
+        {
+            J_xz_plus[ax] = J_kq(0, 0, 0, k.x, k.y, k.z, couplingParameters, X, Z, ax);
+            J_yz_plus[ax] = J_kq(0, 0, 0, k.x, k.y, k.z, couplingParameters, Y, Z, ax);
+            J_xz_minus[ax] = J_kq(0, 0, 0, k.x, k.y, k.z, couplingParameters, X, Z, ax);
+            J_yz_minus[ax] = J_kq(0, 0, 0, k.x, k.y, k.z, couplingParameters, Y, Z, ax);
+        }
+
+        for (int branch = 0; branch < 3; branch++)
+        {
+            for (int axis = 0; axis < 3; axis++)
+            {
+                double pol_vec_component = phDisp.polVectors[axis][branch];
+                std::complex<double> C_add = 2.0 / sqrt(2 * S) * 3.8636 * pol_vec_component * sqrt(1 / (2 * atomicMass * phDisp.E[branch])) * (J_xz_plus[axis] - i * J_yz_plus[axis]);
+                std::complex<double> D_add = 2.0 / sqrt(2 * S) * 3.8636 * pol_vec_component * sqrt(1 / (2 * atomicMass * phDisp.E[branch])) * (J_xz_minus[axis] + i * J_yz_minus[axis]);
+                C.at(branch) += C_add;
+                D.at(branch) += D_add;
+            }
+        }
         return;
     }
 }
@@ -152,7 +176,6 @@ void Diagonalization::calcAB()
 // Calculates the matrix representation of the Hamiltonian and prepares it for diagonalization using the generalized Bogoliubov transformation as outlined by White et al. (2014)
 void Diagonalization::calcMatrixHamiltonian()
 {
-    Eigen::MatrixXd g = getMatrix_g();
 
     // set all elements to zero
     for (int row = 0; row < 8; row++)

@@ -260,7 +260,7 @@ def extract_data_from_dir(directory_path,outfile):
     
 
 
-data = extract_data_from_dir('Parameters/dyn20x20x20/','Parameters/20x20x20_ph_disp.txt')
+data = extract_data_from_dir('Parameters/4x4x4_new/','Parameters/4x4x4_new_disp.txt')
 #write_data_to_file(data, filename='Parameters/20x20x20_ph_disp.txt')
 
 

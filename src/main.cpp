@@ -11,7 +11,6 @@ int main()
 {
 
     // Read the magnon-phonon coupling parameters from the files
-
     std::vector<CouplingParameter> parametersX, parametersY, parametersZ; // vectors containing the parameters/tensor in x,y,z displacement
     std::vector<CouplingParameter> parameters;                            // vector containing the tensor
 
@@ -82,12 +81,11 @@ int main()
 
     // ____ Calculate the magnon dispersion based on a given phonon dispersion ____
 
-
     ///*
 
     // _____________ Diagonalize the Hamiltonian _____________
 
-    std::vector<PhononDispParam> phononDispersion = readPhononDispParams("Parameters/20x20x20_disp.txt");                                          // read the phonon dispersion from the file
+    std::vector<PhononDispParam> phononDispersion = readPhononDispParams("Parameters/20x20x20_ph_disp.txt");                                             // read the phonon dispersion from the file
     std::vector<MagnonDispParam> magnonDispersion = getMagnonDispFromPhononDisp(phononDispersion, "Parameters/J_bccFe.txt", "Outputs/20x20x20/mag.txt"); // calculate the magon dispersion given for the k vectors of the phonon dispersion
 
     // std::vector<PhononDispParam> phononDispersion = readPhononDispParams("Outputs/wholeBZ/grid_formatted.txt");
@@ -101,6 +99,7 @@ int main()
     std::vector<std::string> outDMILike(phononDispersion.size());
     std::vector<std::string> outAB(phononDispersion.size());
     std::vector<std::string> outAngularMomentumFromEigenvectors(phononDispersion.size());
+    std::vector<std::string> outMatrixHamiltonian(phononDispersion.size());
 
 #pragma omp parallel for
     for (int idx = 0; idx < phononDispersion.size(); idx++)
@@ -114,7 +113,7 @@ int main()
         }
 
         Diagonalization diag(parameters, phononDispersion.at(idx), magnonDispersion.at(idx), kVec);
-        diag.calculateCD();
+        diag.calculateCD(false); // false: calculate the full tensor (including aniso and DMI), true: calculate only the DMI-like part
         diag.calcMatrixHamiltonian();
         diag.diagonalize();
         diag.calcAngularMomentum();
@@ -123,7 +122,7 @@ int main()
         diag.calcAngularMomentumFromEigenvectors();
 
         // Construct the strings for each output based on the computation
-        std::ostringstream evStream, cdStream, eVecStream, angMomStream, dmiLikeStream, abStream, angMomFromEigenvectorsStream;
+        std::ostringstream evStream, cdStream, eVecStream, matrixHamilStream, angMomStream, dmiLikeStream, abStream, angMomFromEigenvectorsStream;
 
         // Eigen energies
         for (int i = 0; i < 7; i++)
@@ -145,6 +144,19 @@ int main()
                 if (row < 7 || col < 7)
                 {
                     eVecStream << ",";
+                }
+            }
+        }
+
+        // Matrix Hamiltonian
+        for (int col = 0; col < 8; col++)
+        {
+            for (int row = 0; row < 8; row++)
+            {
+                matrixHamilStream << diag.matrixHamiltonian.col(col).row(row).x();
+                if (row < 7 || col < 7)
+                {
+                    matrixHamilStream << ",";
                 }
             }
         }
@@ -181,17 +193,18 @@ int main()
         outDMILike[idx] = dmiLikeStream.str();
         outAB[idx] = abStream.str();
         outAngularMomentumFromEigenvectors[idx] = angMomFromEigenvectorsStream.str();
+        outMatrixHamiltonian[idx] = matrixHamilStream.str();
     }
 
     // Write the output data to files
-
-    std::ofstream outFileEV("Outputs/20x20x20/ev.txt");
+    std::ofstream outFileEV("Outputs/20x20x20/eigenvalues.txt");
     std::ofstream outFileCD("Outputs/20x20x20/CD.txt");
-    std::ofstream outFileEVectors("Outputs/20x20x20/eig_vec.txt");
-    std::ofstream outFileAngularMomentum("Outputs/20x20x20/ang.txt");
+    std::ofstream outFileEVectors("Outputs/20x20x20/eigenvectors.txt");
+    std::ofstream outFileAngularMomentum("Outputs/20x20x20/ang_mom.txt");
     std::ofstream outFileDMILike("Outputs/20x20x20/DMIlike.txt");
     std::ofstream outFileAB("Outputs/20x20x20/AB.txt");
     std::ofstream outFileAngularMomentumFromEigenvectors("Outputs/20x20x20/ang_eig_fromEV.txt");
+    std::ofstream outFileMatrixHamiltonian("Outputs/20x20x20/matrixHamiltonian.txt");
 
     for (const auto &line : outEV)
     {
@@ -225,12 +238,18 @@ int main()
         outFileAngularMomentumFromEigenvectors << line << "\n";
     }
 
+    for (const auto &line : outMatrixHamiltonian)
+    {
+        outFileMatrixHamiltonian << line << "\n";
+    }
+
     outFileAngularMomentum.close();
     outFileEVectors.close();
     outFileEV.close();
     outFileCD.close();
     outFileDMILike.close();
     outFileAB.close();
+    outFileMatrixHamiltonian.close();
 
     //  END OF DIAGONALIZATION CALCULATIONS
 
