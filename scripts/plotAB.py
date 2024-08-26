@@ -11,8 +11,10 @@ def parse_complex(tuple_str):
 
 
 As, Bs = [], []
+filepath = "Outputs/full_path/AB_set_pol_vec.txt" # white data
+filepath = "Outputs/test_oldMehtod/AB.txt" #colpa data
 
-with open('Outputs/full_path/AB_set_pol_vec.txt', 'r') as file:
+with open(filepath, 'r') as file:
     file.readline()
     for line in file:
         line = line.strip('\n')

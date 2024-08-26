@@ -12,7 +12,10 @@ def parse_complex(tuple_str):
 
 As, Bs = [], []
 
-with open('scripts/Data/set_pol_vec_input_output/AB_set_pol_vec_GH.txt', 'r') as file:
+filepath = 'scripts/Data/set_pol_vec_input_output/AB_set_pol_vec_GH.txt'
+filepath_colpa = 'Outputs/test_GH/AB.txt'
+
+with open(filepath_colpa, 'r') as file:
     file.readline()
     for line in file:
         line = line.strip('\n')
@@ -43,10 +46,10 @@ axs.plot(x, [np.abs(A) for A in As], label=r"$|A^+_{\boldsymbol{k}}|$", linewidt
 axs.plot(x, [np.abs(B) for B in Bs], label=r"$|A^-_{\boldsymbol{k}}|$", linewidth=2)
 
 plt.ylabel(r'$|A^{\pm}_{\boldsymbol{k}}|$ (meV)')
-plt.legend()
+plt.legend(loc='upper left')
 plt.xticks([0,1], labels=[r'$\Gamma$', r'$H$'])
 plt.tight_layout()
-plt.savefig('scripts/Figures/AB_GH.png', dpi=600)
+plt.savefig('scripts/Figures/AB_GH_colpa.png', dpi=600)
 plt.show()
 
 
