@@ -4,7 +4,7 @@
 #include "../include/diagonalization.h"
 #include "../include/dynamics.h"
 #include "../include/fourierTransform.h"
-
+#include <filesystem>
 #include <chrono>
 
 int main()
@@ -85,8 +85,11 @@ int main()
 
     // _____________ Diagonalize the Hamiltonian _____________
 
-    std::vector<PhononDispParam> phononDispersion = readPhononDispParams("Parameters/20x20x20_ph_disp.txt");                                             // read the phonon dispersion from the file
-    std::vector<MagnonDispParam> magnonDispersion = getMagnonDispFromPhononDisp(phononDispersion, "Parameters/J_bccFe.txt", "Outputs/20x20x20/mag.txt"); // calculate the magon dispersion given for the k vectors of the phonon dispersion
+    std::vector<PhononDispParam> phononDispersion = readPhononDispParams("Outputs/test_GH/GHz_formatted.txt");                                       // read the phonon dispersion from the file
+    std::vector<MagnonDispParam> magnonDispersion = getMagnonDispFromPhononDisp(phononDispersion, "Parameters/J_bccFe.txt", "Outputs/test/mag.txt"); // calculate the magon dispersion given for the k vectors of the phonon dispersion
+
+    std::string outputDirectory = "Outputs/test_GH/";
+    assert(std::filesystem::is_directory(outputDirectory) && "Output directory does not exist");
 
     // std::vector<PhononDispParam> phononDispersion = readPhononDispParams("Outputs/wholeBZ/grid_formatted.txt");
     // std::vector<MagnonDispParam> magnonDispersion = getMagnonDispFromPhononDisp(phononDispersion, "Parameters/J_bccFe.txt", "Outputs/intercept_acc.txt");
@@ -100,8 +103,9 @@ int main()
     std::vector<std::string> outAB(phononDispersion.size());
     std::vector<std::string> outAngularMomentumFromEigenvectors(phononDispersion.size());
     std::vector<std::string> outMatrixHamiltonian(phononDispersion.size());
+    std::vector<std::string> outPolVec(phononDispersion.size());
 
-#pragma omp parallel for
+//#pragma omp parallel for
     for (int idx = 0; idx < phononDispersion.size(); idx++)
     {
         Vector3D kVec(phononDispersion.at(idx).kx, phononDispersion.at(idx).ky, phononDispersion.at(idx).kz);
@@ -113,16 +117,24 @@ int main()
         }
 
         Diagonalization diag(parameters, phononDispersion.at(idx), magnonDispersion.at(idx), kVec);
-        diag.calculateCD(false); // false: calculate the full tensor (including aniso and DMI), true: calculate only the DMI-like part
+        diag.calculateCD(DMI);
         diag.calcMatrixHamiltonian();
-        diag.diagonalize();
+        ComputationInfo compInfo = diag.diagonalizeColpa();
+
+        if (compInfo == FAILURE)
+        {
+            std::cerr << "Diagonalization failed for k: " << kVec.x << " " << kVec.y << " " << kVec.z << std::endl;
+            continue;
+        }
+
         diag.calcAngularMomentum();
         diag.calcDMILike();
         diag.calcAB();
         diag.calcAngularMomentumFromEigenvectors();
+        diag.calcPolVectors();
 
         // Construct the strings for each output based on the computation
-        std::ostringstream evStream, cdStream, eVecStream, matrixHamilStream, angMomStream, dmiLikeStream, abStream, angMomFromEigenvectorsStream;
+        std::ostringstream evStream, cdStream, eVecStream, matrixHamilStream, angMomStream, dmiLikeStream, abStream, angMomFromEigenvectorsStream, polVecStream;
 
         // Eigen energies
         for (int i = 0; i < 7; i++)
@@ -185,6 +197,15 @@ int main()
             }
         }
 
+        // Pol Vectors
+        for (int nu = 0; nu < 8; nu++)
+        {
+            for (Axis axis : {X, Y, Z})
+            {
+                polVecStream << diag.polVectors.at(nu)(axis) << " ";
+            }
+        }
+
         // Assign the constructed strings to the corresponding vectors
         outEV[idx] = evStream.str();
         outCD[idx] = cdStream.str();
@@ -194,17 +215,19 @@ int main()
         outAB[idx] = abStream.str();
         outAngularMomentumFromEigenvectors[idx] = angMomFromEigenvectorsStream.str();
         outMatrixHamiltonian[idx] = matrixHamilStream.str();
+        outPolVec[idx] = polVecStream.str();
     }
 
     // Write the output data to files
-    std::ofstream outFileEV("Outputs/20x20x20/eigenvalues.txt");
-    std::ofstream outFileCD("Outputs/20x20x20/CD.txt");
-    std::ofstream outFileEVectors("Outputs/20x20x20/eigenvectors.txt");
-    std::ofstream outFileAngularMomentum("Outputs/20x20x20/ang_mom.txt");
-    std::ofstream outFileDMILike("Outputs/20x20x20/DMIlike.txt");
-    std::ofstream outFileAB("Outputs/20x20x20/AB.txt");
-    std::ofstream outFileAngularMomentumFromEigenvectors("Outputs/20x20x20/ang_eig_fromEV.txt");
-    std::ofstream outFileMatrixHamiltonian("Outputs/20x20x20/matrixHamiltonian.txt");
+    std::ofstream outFileEV(outputDirectory + "eigenenergies.txt");
+    std::ofstream outFileCD(outputDirectory + "CD.txt");
+    std::ofstream outFileEVectors(outputDirectory + "eigenvectors.txt");
+    std::ofstream outFileAngularMomentum(outputDirectory + "ang_mom.txt");
+    std::ofstream outFileDMILike(outputDirectory + "DMIlike.txt");
+    std::ofstream outFileAB(outputDirectory + "AB.txt");
+    std::ofstream outFileAngularMomentumFromEigenvectors(outputDirectory + "ang_eig_fromEV.txt");
+    std::ofstream outFileMatrixHamiltonian(outputDirectory + "matrixHamiltonian.txt");
+    std::ofstream outFilePolVec(outputDirectory + "polVec.txt");
 
     for (const auto &line : outEV)
     {
@@ -243,6 +266,11 @@ int main()
         outFileMatrixHamiltonian << line << "\n";
     }
 
+    for (const auto &line : outPolVec)
+    {
+        outFilePolVec << line << "\n";
+    }
+
     outFileAngularMomentum.close();
     outFileEVectors.close();
     outFileEV.close();
@@ -250,6 +278,8 @@ int main()
     outFileDMILike.close();
     outFileAB.close();
     outFileMatrixHamiltonian.close();
+    outFileAngularMomentumFromEigenvectors.close();
+    outFilePolVec.close();
 
     //  END OF DIAGONALIZATION CALCULATIONS
 

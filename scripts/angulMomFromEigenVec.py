@@ -4,8 +4,9 @@ import numpy as np
 import scienceplots
 
 
-filename = "Outputs/Angular_Gxyz/GHx_ang_eig_fromEV.txt"
-
+filename = "Outputs/Angular_Gxyz/GHz_ang_eig_fromEV.txt"
+filename = "Outputs/AngularMomentum/ang_eig_fromEV_GHz.txt"
+filename = "Outputs/test_GH/ang_eig_fromEV.txt"
 
 plt.style.use('science')
 
@@ -30,7 +31,7 @@ with open(filename, 'r') as f:
                 if j == 2:
                     Lz.append(float(splitted_line[i]))
 
-        plt.scatter([line_count for _ in range(8)], Lx, color='tab:blue', s=3)
+        plt.scatter([line_count for _ in range(8)], Lz, color='tab:blue', s=3)
 
 xmin = 10
 xmax = 490
@@ -50,5 +51,5 @@ plt.ylim(-1.1,1.1)
 
 plt.ylabel("angular momentum ($\hbar$)")
 plt.tight_layout()
-plt.savefig("scripts/Figures/ang_eig_fromEV_GHx.png", dpi=500)
+plt.savefig("scripts/Figures/ang_eig_fromEV_GHz_colpa.png", dpi=500)
 plt.show()

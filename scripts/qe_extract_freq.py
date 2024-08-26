@@ -73,7 +73,7 @@ def extract_data_grouped_by_q_vector(filename, skip_lines=0):
 
             if i < skip_lines:
                 continue
-            
+
             if q_pattern in line:
                 # Check if there's any collected data for the previous q vector
                 if temp_frequencies_and_vectors:
@@ -138,7 +138,7 @@ def extract_data_grouped_by_q_vector_dyn(filename):
         lines = file.readlines()
 
         for i, line in enumerate(lines):
-            
+
             if freq_pattern in line:
                 # Corrected: Extract frequency in THz correctly by taking the value before [THz]
                 freq_thz = float(line.split('=')[1].split('[')[0].strip())
@@ -158,9 +158,9 @@ def extract_data_grouped_by_q_vector_dyn(filename):
         lines = file.readlines()
 
         for i, line in enumerate(lines):
-            
+
             if q_pattern in line:
-                
+
                 # Extract and update the current q vector
                 q_vector_line = line.strip().split()
                 current_q_vector = [float(q_vector_line[j]) for j in [3, 4, 5]] # indices anpassen nach datei!
@@ -213,8 +213,8 @@ def write_data_to_file(data, filename):
 
 # Turns a file containing QE's output of frequencies and eigenvectors into my format
 
-data = extract_data_grouped_by_q_vector('Outputs/Diag_Grid/bccfe_acc.eig')
-write_data_to_file(data, filename='Outputs/Diag_Grid/diag_grid_ph_disp_acc.txt')
+data = extract_data_grouped_by_q_vector('Parameters/20x20x20_ph_disp_custom.eig')
+write_data_to_file(data, filename='Outputs/20x20x20_custom/20x20x20_ph_disp_custom.txt')
 
 
 def extract_data_from_dir(directory_path,outfile):
@@ -257,7 +257,7 @@ def extract_data_from_dir(directory_path,outfile):
                 of.write(line + "\n")
 
             all_data.extend(data)
-    
+
 
 
 data = extract_data_from_dir('Parameters/4x4x4_new/','Parameters/4x4x4_new_disp.txt')

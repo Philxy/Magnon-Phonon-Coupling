@@ -63,6 +63,7 @@ def read_angular_momentum_components(filename):
 
 # Example usage
 filename = 'scripts/Data/set_pol_vec_input_output/angularMomentum_set_pol_vec.txt'
+filename = 'Outputs/test_GH/ang_mom.txt'
 angular_momentum_data = read_angular_momentum_components(filename)
 
 
@@ -77,11 +78,11 @@ plt.plot(x,[ 2* (angular_momentum_data[i][1]).real for i in range(len(angular_mo
 plt.plot(x,[ 2* (angular_momentum_data[i][2]).real for i in range(len(angular_momentum_data))],linewidth=2, alpha=0.8)
 plt.plot(x,[ 2* (angular_momentum_data[i][3]).real for i in range(len(angular_momentum_data))],linewidth=2, alpha=0.8)
 
-plt.xticks([0,1000], labels=[r'$\Gamma$',r'$H$'])
+plt.xticks([0,499], labels=[r'$\Gamma$',r'$H$'])
 plt.ylabel(r'angular momentum ($\hbar$)')
 plt.yticks([-1,0,1])
 plt.tight_layout()
-#plt.savefig('scripts/Figures/angular_momentum_GH.png', dpi=600)
+plt.savefig('scripts/Figures/angular_momentum_GH_colpa.png', dpi=600)
 plt.show()
 plt.clf()
 

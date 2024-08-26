@@ -67,6 +67,36 @@ void Diagonalization::calcAngularMomentumFromEigenvectors()
     return;
 }
 
+void Diagonalization::calcPolVectors()
+{
+
+    std::vector<Eigen::Vector3cd> complex_pol_vectors;
+
+    for (int row = 0; row < 8; row++)
+    {
+        Eigen::Vector3cd pol_vector;
+
+        for (int col = 4; col < 7; col++)
+        {
+            pol_vector(col - 4) = eigenvectors_inverse(row, col);
+        }
+        complex_pol_vectors.push_back(pol_vector);
+
+        for (int col = 0; col < 3; col++)
+        {
+            pol_vector(col) = eigenvectors_inverse(row, col);
+        }
+        // complex_pol_vectors.push_back(pol_vector);
+    }
+
+    for (Eigen::Vector3cd pol_vec : complex_pol_vectors)
+    {
+        polVectors.push_back(pol_vec);
+    }
+
+    return;
+}
+
 void Diagonalization::calcDMILike()
 {
     // Dxx, Dxy, Dxz, Dyx, Dyy, Dyz
@@ -84,14 +114,15 @@ void Diagonalization::calcDMILike()
 }
 
 // Calculates the DMI-like coefficients projected onto the polarization vectors, termed C and D or D_minus and D_plus
-void Diagonalization::calculateCD(bool dmiOnly)
+void Diagonalization::calculateCD(Interaction interaction)
 {
 
     const std::complex<double> i(0, 1);
 
-    if (dmiOnly)
+    switch (interaction)
     {
-
+    case DMI:
+    {
         DMILike dmiLike_plus_k(k.x, k.y, k.z, couplingParameters);
         DMILike dmiLike_minus_k(-k.x, -k.y, -k.z, couplingParameters);
 
@@ -115,9 +146,14 @@ void Diagonalization::calculateCD(bool dmiOnly)
                 D.at(branch) += D_add;
             }
         }
-        return;
+
+        assert(std::abs(std::conj(C.at(0)) - D.at(0)) < 1e-7 && "coefficients are not conjugate");
+        assert(std::abs(std::conj(C.at(1)) - D.at(1)) < 1e-7 && "coefficients are not conjugate");
+        assert(std::abs(std::conj(C.at(2)) - D.at(2)) < 1e-7 && "coefficients are not conjugate");
+
+        break;
     }
-    else
+    case ALL:
     {
         // Includes the contribution of the anisotropy and the DM
 
@@ -130,8 +166,8 @@ void Diagonalization::calculateCD(bool dmiOnly)
         {
             J_xz_plus[ax] = J_kq(0, 0, 0, k.x, k.y, k.z, couplingParameters, X, Z, ax);
             J_yz_plus[ax] = J_kq(0, 0, 0, k.x, k.y, k.z, couplingParameters, Y, Z, ax);
-            J_xz_minus[ax] = J_kq(0, 0, 0, k.x, k.y, k.z, couplingParameters, X, Z, ax);
-            J_yz_minus[ax] = J_kq(0, 0, 0, k.x, k.y, k.z, couplingParameters, Y, Z, ax);
+            J_xz_minus[ax] = J_kq(0, 0, 0, -k.x, -k.y, -k.z, couplingParameters, X, Z, ax);
+            J_yz_minus[ax] = J_kq(0, 0, 0, -k.x, -k.y, -k.z, couplingParameters, Y, Z, ax);
         }
 
         for (int branch = 0; branch < 3; branch++)
@@ -145,7 +181,58 @@ void Diagonalization::calculateCD(bool dmiOnly)
                 D.at(branch) += D_add;
             }
         }
-        return;
+        break;
+    }
+    case ANISOTROPY:
+    {
+        // First, calculate the contribution of all interactions
+
+        std::complex<double> J_xz_plus[3] = {0, 0, 0};
+        std::complex<double> J_yz_plus[3] = {0, 0, 0};
+        std::complex<double> J_xz_minus[3] = {0, 0, 0};
+        std::complex<double> J_yz_minus[3] = {0, 0, 0};
+
+        // Calculate the contribution of the DMI and subtract it
+        DMILike dmiLike_plus_k(k.x, k.y, k.z, couplingParameters);
+        DMILike dmiLike_minus_k(-k.x, -k.y, -k.z, couplingParameters);
+
+        std::complex<double> DPlus_minus_k[3];
+        std::complex<double> DMinus_plus_k[3];
+
+        for (int mu = 0; mu < 3; mu++)
+        {
+            DPlus_minus_k[mu] = dmiLike_minus_k.D[X][mu] + i * dmiLike_minus_k.D[Y][mu];
+            DMinus_plus_k[mu] = dmiLike_plus_k.D[X][mu] - i * dmiLike_plus_k.D[Y][mu];
+
+            J_xz_plus[mu] = J_kq(0, 0, 0, k.x, k.y, k.z, couplingParameters, X, Z, static_cast<Axis>(mu));
+            J_yz_plus[mu] = J_kq(0, 0, 0, k.x, k.y, k.z, couplingParameters, Y, Z, static_cast<Axis>(mu));
+            J_xz_minus[mu] = J_kq(0, 0, 0, -k.x, -k.y, -k.z, couplingParameters, X, Z, static_cast<Axis>(mu));
+            J_yz_minus[mu] = J_kq(0, 0, 0, -k.x, -k.y, -k.z, couplingParameters, Y, Z, static_cast<Axis>(mu));
+        }
+
+        for (int branch = 0; branch < 3; branch++)
+        {
+            for (int axis = 0; axis < 3; axis++)
+            {
+                double pol_vec_component = phDisp.polVectors[axis][branch];
+
+                std::complex<double> C_add = 2.0 / sqrt(2 * S) * 3.8636 * pol_vec_component * sqrt(1 / (2 * atomicMass * phDisp.E[branch])) * (J_xz_plus[axis] - i * J_yz_plus[axis]);
+                std::complex<double> D_add = 2.0 / sqrt(2 * S) * 3.8636 * pol_vec_component * sqrt(1 / (2 * atomicMass * phDisp.E[branch])) * (J_xz_minus[axis] + i * J_yz_minus[axis]);
+
+                std::complex<double> C_subtract = 2.0 * i / sqrt(2 * S) * 3.8636 * DMinus_plus_k[axis] * pol_vec_component * sqrt(1 / (2 * atomicMass * phDisp.E[branch]));
+                std::complex<double> D_subtract = -2.0 * i / sqrt(2 * S) * 3.8636 * DPlus_minus_k[axis] * pol_vec_component * sqrt(1 / (2 * atomicMass * phDisp.E[branch]));
+
+                C.at(branch) += C_add;
+                D.at(branch) += D_add;
+
+                C.at(branch) += C_subtract;
+                D.at(branch) += D_subtract;
+            }
+        }
+        break;
+    }
+    default:
+        break;
     }
 }
 
@@ -206,28 +293,6 @@ void Diagonalization::calcMatrixHamiltonian()
         // lower right quadrant
         matrixHamiltonian(4 + branch, 7) = D.at(branch);
         matrixHamiltonian(7, 4 + branch) = C.at(branch);
-
-        /*
-        // isolate a mode
-        int c = 2;
-        if (branch != c)
-        {
-            matrixHamiltonian(branch, 7) = 0;     // D.at(branch);
-            matrixHamiltonian(3, 4 + branch) = 0; // D.at(branch);
-            // lower left quadrant
-            matrixHamiltonian(4 + branch, 3) = 0; // C.at(branch);
-            matrixHamiltonian(7, branch) = 0;     // C.at(branch);
-            // upper left quadrant
-            matrixHamiltonian(branch, 3) = 0; // C.at(branch);
-            matrixHamiltonian(3, branch) = 0; // D.at(branch);
-            // lower right quadrant
-            matrixHamiltonian(4 + branch, 7) = 0; // D.at(branch);
-            matrixHamiltonian(7, 4 + branch) = 0; // C.at(branch);
-
-            matrixHamiltonian(branch, branch) = 0;
-            matrixHamiltonian(branch + 4, branch + 4) = 0;
-        }
-        */
     }
 
     // Magnon energy
@@ -262,6 +327,64 @@ Eigen::MatrixXd getMatrix_g()
     }
     return g;
 }
+
+bool isDiagonal(const Eigen::MatrixXcd &matrix)
+{
+    double epsilon = 1e-7;
+    for (int row = 0; row < matrix.rows(); row++)
+    {
+        for (int col = 0; col < matrix.cols(); col++)
+        {
+            if (row != col && std::abs(matrix(row, col)) >= epsilon)
+            {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+double getLargestNonDiagonalElement(const Eigen::MatrixXcd &matrix)
+{
+    double largestNonDiagonalElement = 0.0;
+
+    for (int row = 0; row < matrix.rows(); row++)
+    {
+        for (int col = 0; col < matrix.cols(); col++)
+        {
+            if (row != col)
+            {
+                double element = std::abs(matrix(row, col));
+                if (element > largestNonDiagonalElement)
+                {
+                    largestNonDiagonalElement = element;
+                }
+            }
+        }
+    }
+
+    return largestNonDiagonalElement;
+}
+
+void printMatrix(const Eigen::MatrixXcd &matrix)
+{
+    int width = 15;    // width for each element
+    int precision = 3; // number of decimal places
+
+    for (int row = 0; row < matrix.rows(); row++)
+    {
+        for (int col = 0; col < matrix.cols(); col++)
+        {
+            std::cout << std::setw(width)
+                      << std::setprecision(precision)
+                      << std::fixed
+                      << matrix(row, col)
+                      << " ";
+        }
+        std::cout << std::endl;
+    }
+}
+
 /*
 Performs the diagonalization of gH
 - If V is a matrix with the eigenvectors as its columns
@@ -270,9 +393,8 @@ Performs the diagonalization of gH
 */
 void Diagonalization::diagonalize()
 {
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXcd> solver;
     Eigen::MatrixXcd matrix = getMatrix_g() * matrixHamiltonian;
-    solver.compute(matrix);
+    Eigen::ComplexEigenSolver<Eigen::MatrixXcd> solver(matrix);
 
     eigenvectors = solver.eigenvectors();
     eigenvectors_inverse = solver.eigenvectors().inverse();
@@ -280,11 +402,320 @@ void Diagonalization::diagonalize()
     // Loop over each eigenvalue
     for (int i = 0; i < solver.eigenvalues().size(); ++i)
     {
-        double realPart = solver.eigenvalues()[i];
+        double realPart = solver.eigenvalues()[i].real();
 
         eigenEnergies.push_back(realPart);
     }
+
+    // std::cout << "matrix Hamiltonian: H " << std::endl;
+    // printMatrix(matrixHamiltonian);
+
+    // std::cout << "supposedly diagonal matrix: Q^dagger H Q " << std::endl;
+    // printMatrix((eigenvectors.transpose()).conjugate() * matrixHamiltonian * eigenvectors);
+    auto diagMat = (eigenvectors.transpose()).conjugate() * matrixHamiltonian * eigenvectors;
+    if (!isDiagonal(diagMat))
+    {
+        // printMatrix(diagMat);
+        std::cout << "k-vector: " << k.x << " " << k.y << " " << k.z << std::endl;
+        // set the print precision to 10 decimal places
+        std::cout << std::setw(15)
+                  << std::setprecision(10)
+                  << std::fixed;
+        std::cout << "larges non diag element: " << getLargestNonDiagonalElement(diagMat) << std::endl;
+        std::cout << "_________________" << std::endl;
+    }
+    // assert(isDiagonal((eigenvectors.transpose()).conjugate() * matrixHamiltonian * eigenvectors) && "matrix is not diagonal");
+
+    // std::cout << "numerically diagonalized matrix: Q^-1 g H Q" << std::endl;
+    // printMatrix(eigenvectors_inverse * matrix * eigenvectors);
+
+    // std::cout << "check if Hamiltonian is self adjoint: H-H^dagger == 0 " << std::endl;
+    // printMatrix(matrixHamiltonian.adjoint() - matrixHamiltonian);
+
+    // std::cout << "calculate g^prime:" << std::endl;
+    Eigen::MatrixXcd g_prime = eigenvectors_inverse * getMatrix_g() * eigenvectors.adjoint().inverse();
+    // printMatrix(g_prime);
+    // assert(isDiagonal(g_prime) && "g_prime is not diagonal");
+
+    // std::cout << "__________" << std::endl;
+
+    return;
 }
+
+// Returns the square root of a diagonal matrix (element-wise)
+Eigen::MatrixXcd squaredMatrix(const Eigen::MatrixXcd &matrix)
+{
+    Eigen::MatrixXcd matSqrt = Eigen::MatrixXcd::Zero(matrix.rows(), matrix.cols());
+    for (int i = 0; i < matrix.rows(); ++i)
+    {
+        matSqrt(i, i) = std::sqrt(matrix(i, i)); // compute the square root of each diagonal element
+    }
+    return matSqrt;
+}
+
+bool equalityToIdentityMatrix(const Eigen::MatrixXcd &matrix)
+{
+    double epsilon = 1e-10;
+    Eigen::MatrixXcd identity = Eigen::MatrixXcd::Identity(matrix.rows(), matrix.cols());
+    for (int i = 0; i < matrix.rows(); ++i)
+    {
+        for (int j = 0; j < matrix.cols(); ++j)
+        {
+            if (std::abs(matrix(i, j) - identity(i, j)) > epsilon)
+            {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+bool isHermitian(const Eigen::MatrixXcd &matrix)
+{
+    return matrix.isApprox(matrix.adjoint(), 1E-10);
+}
+
+void Diagonalization::roundMatrixHamiltonian()
+{
+    int numDigits = 6;
+    double factor = std::pow(10.0, numDigits); // Compute factor for rounding
+
+    for (int row = 0; row < matrixHamiltonian.rows(); row++)
+    {
+        for (int col = 0; col <= row; col++)
+        {
+            // Round the real part
+            double realPart = std::round(matrixHamiltonian(row, col).real() * factor) / factor;
+
+            // Round the imaginary part
+            double imagPart = std::round(matrixHamiltonian(row, col).imag() * factor) / factor;
+
+            // Update the lower triangular part
+            matrixHamiltonian(row, col) = std::complex<double>(realPart, imagPart);
+
+            // Update the corresponding upper triangular part to ensure Hermitian property
+            if (row != col)
+            {
+                matrixHamiltonian(col, row) = std::complex<double>(realPart, -imagPart);
+            }
+        }
+    }
+}
+
+bool isPositiveDefinite(const Eigen::MatrixXcd &matrix)
+{
+    if (!isHermitian(matrix))
+    {
+        std::cout << "positive definite check: matrix is not hermitian" << std::endl;
+        return false;
+    }
+
+    Eigen::ComplexEigenSolver<Eigen::MatrixXcd> solver(matrix);
+
+    for (auto eigenvalue : solver.eigenvalues())
+    {
+        if (eigenvalue.real() <= 0)
+        {
+            std::cout << "positive definite check: eigenvalue smaller than zero" << std::endl;
+            // std::cout << "Eigenvalues: " << solver.eigenvalues() << std::endl;
+            return false;
+        }
+    }
+    return true;
+}
+
+bool isApproxZero(const Eigen::MatrixXcd &matrix, double epsilon = 1e-10)
+{
+    // Check if all elements of the matrix are approximately zero
+    return matrix.cwiseAbs().maxCoeff() <= epsilon;
+}
+
+struct EigenPair
+{
+    double eigenvalue;
+    Eigen::MatrixXcd eigenvector;
+};
+
+bool compareEigenPairs(const EigenPair &a, const EigenPair &b)
+{
+    return a.eigenvalue > b.eigenvalue;
+}
+
+/// @brief Sorts the eigenvalues and eigenvectors in ascending order
+/// @param eigenvectors matrix with eigenvectors as columns
+/// @param eigenvalues  diagonal matrix with eigenvalues on the diagonal
+void sortEigenvaluesAndVectors(Eigen::MatrixXcd &eigenvectors, Eigen::MatrixXcd &eigenvalues)
+{
+    // Create a vector of eigenpairs
+    std::vector<EigenPair> eigenPairs;
+    for (int i = 0; i < eigenvalues.cols(); ++i)
+    {
+        eigenPairs.push_back({eigenvalues(i, i).real(), eigenvectors.col(i)});
+    }
+
+    // Sort eigenpairs by eigenvalue
+    std::sort(eigenPairs.begin(), eigenPairs.end(), compareEigenPairs);
+
+    // Create sorted eigenvalue vector and eigenvector matrix
+    Eigen::MatrixXcd sortedEigenvalues = Eigen::MatrixXcd::Zero(eigenvalues.rows(), eigenvalues.cols());
+    Eigen::MatrixXcd sortedEigenvectors(eigenvectors.rows(), eigenvectors.cols());
+
+    for (int i = 0; i < eigenPairs.size(); ++i)
+    {
+        sortedEigenvalues(i, i) = eigenPairs[i].eigenvalue;
+        sortedEigenvectors.col(i) = eigenPairs[i].eigenvector;
+    }
+
+    eigenvalues = sortedEigenvalues;
+    eigenvectors = sortedEigenvectors;
+}
+
+ComputationInfo Diagonalization::diagonalizeColpa()
+{
+    // assertions:
+    // - matrixHamiltonian is hermitian
+    // - matrixHamiltonian is positive definite
+    // - U is unitary
+    // - L is diagonal and has positive and then negative values on the diagonal
+    // - Q^dagger H Q is diagonal
+
+    // roundMatrixHamiltonian();
+
+    if (!isHermitian(matrixHamiltonian))
+    {
+        std::cout << "Matrix is not hermitian" << std::endl;
+        return ComputationInfo::FAILURE;
+    }
+
+    if (!isPositiveDefinite(matrixHamiltonian))
+    {
+        std::cout << "Matrix is not positive definite" << std::endl;
+        return ComputationInfo::FAILURE;
+    }
+
+    Eigen::LLT<Eigen::MatrixXcd> lltOfMatrixHamiltonian(matrixHamiltonian);
+
+    if (lltOfMatrixHamiltonian.info() != Eigen::Success)
+    {
+        std::cout << "Cholesky decomposition failed" << std::endl;
+        return ComputationInfo::FAILURE;
+    }
+
+    Eigen::MatrixXcd K = lltOfMatrixHamiltonian.matrixL().adjoint();
+    Eigen::MatrixXcd Kdagger = K.adjoint();
+
+    Eigen::ComplexEigenSolver<Eigen::MatrixXcd> solver(K * getMatrix_g() * Kdagger);
+
+    if (solver.info() != Eigen::Success)
+    {
+        std::cout << "Eigenvalue decomposition of K g H^dagger failed" << std::endl;
+        return ComputationInfo::FAILURE;
+    }
+
+    Eigen::MatrixXcd V = solver.eigenvectors();
+
+    /*
+    if (U.inverse().isApprox(U.adjoint(), 1E-10))
+    {
+        std::cout << "U is not unitary" << std::endl;
+        return ComputationInfo::FAILURE;
+    }
+    */
+
+    Eigen::HouseholderQR<Eigen::MatrixXcd> qr(V);
+    Eigen::MatrixXcd qrR = qr.matrixQR().triangularView<Eigen::Upper>();
+    Eigen::MatrixXcd qrQ = qr.householderQ();
+
+    if (!isApproxZero(qrQ.adjoint() * qrQ - Eigen::MatrixXcd::Identity(8, 8), 1E-10))
+    {
+        std::cout << "Q is not unitary" << std::endl;
+        std::cout << "max distance to zero: " << (qrQ * qrQ.adjoint() - Eigen::MatrixXcd::Identity(8, 8)).cwiseAbs().maxCoeff() << std::endl;
+        // return ComputationInfo::FAILURE;
+    }
+
+    if (!isApproxZero(V - qrQ * qrR, 1E-10))
+    {
+        std::cout << "QR decomposition not successfull" << std::endl;
+        // std::cout << U - Q * R << std::endl;
+        std::cout << "max dist to zero " << (V - qrQ * qrR).cwiseAbs().maxCoeff() << std::endl;
+        // return ComputationInfo::FAILURE;
+    }
+
+    Eigen::MatrixXcd U = qrQ;
+    Eigen::MatrixXcd Udagger = U.adjoint();
+
+    Eigen::MatrixXcd L = qrR * solver.eigenvalues().asDiagonal() * qrR.inverse();
+
+    if (!isDiagonal(L))
+    {
+        std::cout << "L is not diagonal" << std::endl;
+        return ComputationInfo::FAILURE;
+    }
+
+    if (!isDiagonal(Udagger * K * getMatrix_g() * Kdagger * U))
+    {
+        std::cout << "Udagger * K * g * Kdagger * U is not diagonal" << std::endl;
+        return ComputationInfo::FAILURE;
+    }
+
+    // printMatrix(L);
+    sortEigenvaluesAndVectors(U, L);
+    // printMatrix(L);
+
+    Udagger = U.adjoint();
+
+    if (!isApproxZero(Udagger * K * getMatrix_g() * Kdagger * U - L, 1E-10))
+    {
+        std::cout << "Udagger * K * g * Kdagger * U is not equal to L" << std::endl;
+        return ComputationInfo::FAILURE;
+    }
+
+    if (!isApproxZero(Udagger * U - Eigen::MatrixXcd::Identity(8, 8), 1E-10))
+    {
+        std::cout << "Udagger * U is not equal to the identity matrix" << std::endl;
+        return ComputationInfo::FAILURE;
+    }
+
+    Eigen::MatrixXcd finalDiagonalMatrix = getMatrix_g() * L;
+
+    eigenvectors = (K.inverse() * U * squaredMatrix(finalDiagonalMatrix)).inverse();
+    eigenvectors_inverse = eigenvectors.inverse();
+
+    ///*
+    if (!isDiagonal(eigenvectors.adjoint().inverse() * matrixHamiltonian * eigenvectors.inverse()))
+    {
+        std::cout << "Qdagger H Q is not diagonal. Largest off-diag elem: " << getLargestNonDiagonalElement(eigenvectors_inverse * matrixHamiltonian * eigenvectors) << std::endl;
+        printMatrix(eigenvectors.adjoint() * matrixHamiltonian * eigenvectors);
+        return ComputationInfo::FAILURE;
+    }
+
+    if (!isApproxZero(eigenvectors.adjoint().inverse() * matrixHamiltonian * eigenvectors.inverse() - finalDiagonalMatrix, 1E-10))
+    {
+        std::cout << " Qdagger_inv H Q_inv != E " << std::endl;
+        return ComputationInfo::FAILURE;
+    }
+    //*/
+
+    for (auto eigenvalue : finalDiagonalMatrix.diagonal())
+    {
+        eigenEnergies.push_back(std::abs(eigenvalue.real()));
+    }
+
+    std::cout << "final diag matrix: " << std::endl;
+    printMatrix(finalDiagonalMatrix);
+
+    std::cout << "Q" << std::endl;
+    printMatrix(eigenvectors);
+
+    // correct for rest of program
+    eigenvectors = eigenvectors.inverse();
+    eigenvectors_inverse = eigenvectors_inverse.inverse();
+
+    return SUCCESS;
+}
+
+// what I have learned: using SelfAdjointEigenSolver gives off diagonal when doing the check!
+// using ComplexEigenSolver gives the correct diagonal matrix
 
 void Diagonalization::calcAngularMomentum()
 {
