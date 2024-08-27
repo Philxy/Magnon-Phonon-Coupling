@@ -1,12 +1,17 @@
 import numpy as np
 import matplotlib.pyplot as plt
+
+
+
+import numpy as np
+import matplotlib.pyplot as plt
 import scienceplots
 from scipy.interpolate import griddata
 
 plt.style.use('science')
 
-data_ev = "Outputs/Diag_Grid/ang_eig_fromEV_acc.txt"
-data_phonon = "Outputs/Diag_Grid/diag_grid_ph_disp_acc.txt"
+data_ev = "Outputs/colpa_grid_diag/ang_eig_fromEV.txt"
+data_phonon = "Outputs/colpa_grid_diag/diag_grid_ph_disp_acc.txt"
 
 L = []
 kVec = []
@@ -51,18 +56,22 @@ with open(data_phonon, 'r') as f:
 print(len(L), len(kVec))
 assert len(L) == len(kVec)
 
-
-
-
-
-
 kx = [k[0]/(2*np.pi) for k in kVec]
 ky = [k[1]/(2*np.pi) for k in kVec]
 kz = [k[2]/(2*np.pi) for k in kVec]
 
+
+#Lz = [L[i][2][7] for i in range(len(L))]
+#plt.scatter(kx, kz, c=Lz, cmap='coolwarm', s=10, marker='s', norm=plt.Normalize(-1,1))
+#plt.show()
+
+
+
 Lx_all_modes = []
 Ly_all_modes = []
 Lz_all_modes = []
+
+
 
 for i in range(len(L)):
 
@@ -73,6 +82,8 @@ for i in range(len(L)):
     Lx_all_modes.append([Lx[j] for j in range(8)])
     Ly_all_modes.append([Ly[j] for j in range(8)])
     Lz_all_modes.append([Lz[j] for j in range(8)])
+
+
 
 """
 fig = plt.figure()
@@ -128,7 +139,7 @@ for j in [2]:
 
 fig, axs = plt.subplots(2, 2, figsize=(14/2.52,14/2.52), sharex=True, sharey=True)
 
-for j in [0,1,2,3]:
+for j in [4,5,6,7]:
     Lx_point = [Lx_all_modes[i][j] for i in range(len(L))]
     Ly_point = [Ly_all_modes[i][j] for i in range(len(L))]
     Lz_point = [Lz_all_modes[i][j] for i in range(len(L))]
@@ -137,19 +148,18 @@ for j in [0,1,2,3]:
     kz = np.array(kz)
     Lz_point = np.array(Lz_point)
 
-    if j == 3:
+    if j == 7:
         Lz_point = [np.abs(Lz_point[i]) for i in range(len(L))]
         axs[0][0].scatter(kx, kz, c=Lz_point, cmap='coolwarm', s=10, marker='s', norm=plt.Normalize(-1,1))
-    if j == 1:
+    if j == 5:
         Lz_point = [np.abs(Lz_point[i]) for i in range(len(L))]
         axs[0][1].scatter(kx, kz, c=Lz_point, cmap='coolwarm', s=10, marker='s', norm=plt.Normalize(-1,1))
-    if j == 2:
+    if j == 6:
         Lz_point = [-np.abs(Lz_point[i]) for i in range(len(L))]
         axs[1][0].scatter(kx, kz, c=Lz_point, cmap='coolwarm', s=10, marker='s', norm=plt.Normalize(-1,1))
-    if j == 0:
+    if j == 4:
         Lz_point = [np.abs(Lz_point[i]) for i in range(len(L))]
         axs[1][1].scatter(kx, kz, c=Lz_point, cmap='coolwarm', s=10, marker='s', norm=plt.Normalize(-1,1))
-
 
 
 axs[1][0].set_xlabel('$k_x$ ($2\pi/a$)')
@@ -165,7 +175,6 @@ for i in range(2):
         axs[i][j].set_xticks([-0.05,0,0.05])
         axs[i][j].set_yticks([-0.1,0,0.1])
 
-
 plt.colorbar(plt.cm.ScalarMappable(norm=plt.Normalize(-1,1), cmap='coolwarm'), ax=axs, label='angular momentum ($\hbar$)', pad=-.45)
 
 plt.tight_layout()
@@ -174,10 +183,78 @@ plt.show()
 plt.clf()
 
 
-fig = plt.figure()
-ax = fig.add_subplot(projection='3d')
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import cm
+
+#fig = plt.figure(figsize=(10, 7))
+#ax = fig.add_subplot(111, projection='3d')
+fig, axs = plt.subplots(2, 2, figsize=(22, 7), subplot_kw={'projection': '3d'})
+
+kx_small = []
+ky_small = []
+kz_small = []
+Lz_small_all_modes = []
+
+for i in range(len(L)):
+    kx_temp = kVec[i][0]/(2*np.pi)
+    ky_temp = kVec[i][1]/(2*np.pi)
+    kz_temp = kVec[i][2]/(2*np.pi)
+    if np.abs(kx_temp) < 0.1 and np.abs(ky_temp) < 0.1 and np.abs(kz_temp) < 0.1:
+        kx_small.append(kx_temp)
+        ky_small.append(ky_temp)
+        kz_small.append(kz_temp)
+        Lz_small_all_modes.append(Lz_all_modes[i])
+
+kx = kx_small
+ky = ky_small
+kz = kz_small
+Lz_all_modes = Lz_small_all_modes
 
 
+for j in [4,5,6,7]:
+    Lx_point = [Lx_all_modes[i][j] for i in range(len(kx))]
+    Ly_point = [Ly_all_modes[i][j] for i in range(len(kx))]
+    Lz_point = [Lz_all_modes[i][j] for i in range(len(kx))]
+
+    kx = np.array(kx)
+    ky = np.array(ky)
+    kz = np.array(kz)
+    Lz_point = np.array(Lz_point)
+
+    if j == 7:
+        Lz_point = [-np.abs(Lz_point[i]) for i in range(len(kx))]
+        axs[0][0].scatter(xs=kx, ys=ky, zs=kz,  c=Lz_point, cmap='coolwarm', s=10, marker='s', norm=plt.Normalize(-1,1))
+    if j == 5:
+        Lz_point = [-np.abs(Lz_point[i]) for i in range(len(kx))]
+        axs[0][1].scatter(xs=kx, ys=ky, zs=kz, c=Lz_point, cmap='coolwarm', s=10, marker='s', norm=plt.Normalize(-1,1))
+    if j == 6:
+        Lz_point = [np.abs(Lz_point[i]) for i in range(len(kx))]
+        axs[1][0].scatter(xs=kx, ys=ky, zs=kz, c=Lz_point, cmap='coolwarm', s=10, marker='s', norm=plt.Normalize(-1,1))
+    if j == 4:
+        Lz_point = [np.abs(Lz_point[i]) for i in range(len(kx))]
+        axs[1][1].scatter(xs=kx, ys=ky, zs=kz, c=Lz_point, cmap='coolwarm', s=10, marker='s', norm=plt.Normalize(-1,1))
+
+
+axs[1][1].set_zlabel('$k_z$ ($2\pi/a$)')
+axs[1][1].set_ylabel('$k_y$ ($2\pi/a$)')
+axs[1][1].set_xlabel('$k_x$ ($2\pi/a$)')
+
+for i in range(2):
+    for j in range(2):
+        axs[i][j].set_xlim(-0.1,0.1)
+        axs[i][j].set_ylim(-0.1,0.1)
+        axs[i][j].set_xticks([-0.05,0,0.05])
+        axs[i][j].set_yticks([-0.1,0,0.1])
+
+cbar = plt.colorbar(plt.cm.ScalarMappable(norm=plt.Normalize(-1,1), cmap='coolwarm'), ax=axs, label='angular momentum', pad=-.45)
+cbar.set_ticklabels([r'$\hbar$','0',r'$-\hbar$'])
+cbar.set_ticks([-1,0,1])
+plt.tight_layout()
+plt.savefig("scripts/Figures/ang_eig_fromEV_diag_acc_colpa.png", dpi=700)
+plt.show()
+plt.clf()
+
+exit()
 
 for j in [3]:
     Lx_point = [Lx_all_modes[i][j] for i in range(len(L))]

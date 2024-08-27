@@ -63,7 +63,8 @@ def read_angular_momentum_components(filename):
 
 # Example usage
 filename = 'scripts/Data/set_pol_vec_input_output/angularMomentum_set_pol_vec_GP.txt'
-angular_momentum_data = read_angular_momentum_components(filename)
+filename_colpa = "Outputs/colpa_GP/ang_mom.txt"
+angular_momentum_data = read_angular_momentum_components(filename_colpa)
 
 
 plt.figsize=(12/2.52, 2/2.52)
@@ -81,7 +82,7 @@ plt.xticks([0,1000], labels=[r'$\Gamma$',r'$P$'])
 plt.ylabel(r'angular momentum ($\hbar$)')
 plt.yticks([-1/np.sqrt(3),0,1/np.sqrt(3)], labels=[r'$-\frac{1}{\sqrt{3}}$', '0', r'$\frac{1}{\sqrt{3}}$'])
 plt.tight_layout()
-#plt.savefig('scripts/Figures/angular_momentum_GP.png', dpi=600)
+plt.savefig('scripts/Figures/angular_momentum_GP_colpa.png', dpi=600)
 plt.show()
 plt.clf()
 

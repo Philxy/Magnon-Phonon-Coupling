@@ -85,10 +85,10 @@ int main()
 
     // _____________ Diagonalize the Hamiltonian _____________
 
-    std::vector<PhononDispParam> phononDispersion = readPhononDispParams("Outputs/test_GH/GHz_formatted.txt");                                       // read the phonon dispersion from the file
-    std::vector<MagnonDispParam> magnonDispersion = getMagnonDispFromPhononDisp(phononDispersion, "Parameters/J_bccFe.txt", "Outputs/test/mag.txt"); // calculate the magon dispersion given for the k vectors of the phonon dispersion
+    std::vector<PhononDispParam> phononDispersion = readPhononDispParams("Outputs/colpa_grid/grid_acc2_formatted.txt");                                              // read the phonon dispersion from the file
+    std::vector<MagnonDispParam> magnonDispersion = getMagnonDispFromPhononDisp(phononDispersion, "Parameters/J_bccFe.txt", "Outputs/colpa_grid/mag.txt"); // calculate the magon dispersion given for the k vectors of the phonon dispersion
 
-    std::string outputDirectory = "Outputs/test_GH/";
+    std::string outputDirectory = "Outputs/colpa_grid/";
     assert(std::filesystem::is_directory(outputDirectory) && "Output directory does not exist");
 
     // std::vector<PhononDispParam> phononDispersion = readPhononDispParams("Outputs/wholeBZ/grid_formatted.txt");
@@ -105,7 +105,7 @@ int main()
     std::vector<std::string> outMatrixHamiltonian(phononDispersion.size());
     std::vector<std::string> outPolVec(phononDispersion.size());
 
-//#pragma omp parallel for
+#pragma omp parallel for
     for (int idx = 0; idx < phononDispersion.size(); idx++)
     {
         Vector3D kVec(phononDispersion.at(idx).kx, phononDispersion.at(idx).ky, phononDispersion.at(idx).kz);

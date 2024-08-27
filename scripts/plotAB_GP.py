@@ -12,7 +12,10 @@ def parse_complex(tuple_str):
 
 As, Bs = [], []
 
-with open('scripts/Data/set_pol_vec_input_output/AB_set_pol_vec_GP.txt', 'r') as file:
+filepath = 'scripts/Data/set_pol_vec_input_output/AB_set_pol_vec_GP.txt'
+filepath_colpa = "Outputs/colpa_GP/AB.txt"
+
+with open(filepath_colpa, 'r') as file:
     file.readline()
     for line in file:
         line = line.strip('\n')
@@ -26,8 +29,8 @@ with open('scripts/Data/set_pol_vec_input_output/AB_set_pol_vec_GP.txt', 'r') as
 
         AB = [parse_complex(matches[0]), parse_complex(matches[1])]
 
-        As.append(AB[0])
-        Bs.append(AB[1])
+        As.append(np.max([np.abs(AB[0]), np.abs(AB[1])]))
+        Bs.append(np.min([np.abs(AB[0]), np.abs(AB[1])]))
 
 
 x = np.linspace(0, 1, len(As))
@@ -46,5 +49,5 @@ plt.ylabel(r'$|A^{\pm}_{\boldsymbol{k}}|$ (meV)')
 plt.legend()
 plt.xticks([0,1], labels=[r'$\Gamma$', r'$P$'])
 plt.tight_layout()
-plt.savefig('scripts/Figures/AB_GP.png', dpi=600)
+plt.savefig('scripts/Figures/AB_GP_colpa.png', dpi=600)
 plt.show()

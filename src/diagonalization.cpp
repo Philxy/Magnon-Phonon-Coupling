@@ -612,16 +612,8 @@ ComputationInfo Diagonalization::diagonalizeColpa()
         return ComputationInfo::FAILURE;
     }
 
+    // use QR-decomposition to get unitary matrix
     Eigen::MatrixXcd V = solver.eigenvectors();
-
-    /*
-    if (U.inverse().isApprox(U.adjoint(), 1E-10))
-    {
-        std::cout << "U is not unitary" << std::endl;
-        return ComputationInfo::FAILURE;
-    }
-    */
-
     Eigen::HouseholderQR<Eigen::MatrixXcd> qr(V);
     Eigen::MatrixXcd qrR = qr.matrixQR().triangularView<Eigen::Upper>();
     Eigen::MatrixXcd qrQ = qr.householderQ();
@@ -658,9 +650,7 @@ ComputationInfo Diagonalization::diagonalizeColpa()
         return ComputationInfo::FAILURE;
     }
 
-    // printMatrix(L);
     sortEigenvaluesAndVectors(U, L);
-    // printMatrix(L);
 
     Udagger = U.adjoint();
 
@@ -670,6 +660,7 @@ ComputationInfo Diagonalization::diagonalizeColpa()
         return ComputationInfo::FAILURE;
     }
 
+    // check if U is unitary
     if (!isApproxZero(Udagger * U - Eigen::MatrixXcd::Identity(8, 8), 1E-10))
     {
         std::cout << "Udagger * U is not equal to the identity matrix" << std::endl;
@@ -677,59 +668,54 @@ ComputationInfo Diagonalization::diagonalizeColpa()
     }
 
     Eigen::MatrixXcd finalDiagonalMatrix = getMatrix_g() * L;
+    Eigen::MatrixXcd T = (K.inverse() * U * squaredMatrix(finalDiagonalMatrix)).inverse();
 
-    eigenvectors = (K.inverse() * U * squaredMatrix(finalDiagonalMatrix)).inverse();
-    eigenvectors_inverse = eigenvectors.inverse();
+    // eigenvectors = (K.inverse() * U * squaredMatrix(finalDiagonalMatrix)).inverse();
+    // eigenvectors_inverse = eigenvectors.inverse();
 
-    ///*
-    if (!isDiagonal(eigenvectors.adjoint().inverse() * matrixHamiltonian * eigenvectors.inverse()))
+    // check if T can diagonalize the Hamiltonian
+    if (!isDiagonal(T.adjoint().inverse() * matrixHamiltonian * T.inverse()))
     {
         std::cout << "Qdagger H Q is not diagonal. Largest off-diag elem: " << getLargestNonDiagonalElement(eigenvectors_inverse * matrixHamiltonian * eigenvectors) << std::endl;
         printMatrix(eigenvectors.adjoint() * matrixHamiltonian * eigenvectors);
         return ComputationInfo::FAILURE;
     }
 
-    if (!isApproxZero(eigenvectors.adjoint().inverse() * matrixHamiltonian * eigenvectors.inverse() - finalDiagonalMatrix, 1E-10))
-    {
-        std::cout << " Qdagger_inv H Q_inv != E " << std::endl;
-        return ComputationInfo::FAILURE;
-    }
-    //*/
-
     for (auto eigenvalue : finalDiagonalMatrix.diagonal())
     {
         eigenEnergies.push_back(std::abs(eigenvalue.real()));
     }
 
-    std::cout << "final diag matrix: " << std::endl;
-    printMatrix(finalDiagonalMatrix);
+    // correct notation the program's rest
+    eigenvectors = T.inverse();
+    eigenvectors_inverse = T;
 
-    std::cout << "Q" << std::endl;
-    printMatrix(eigenvectors);
+    if (!isDiagonal(eigenvectors.adjoint() * matrixHamiltonian * eigenvectors))
+    {
+        std::cout << "Qdagger H Q is not diagonal" << std::endl;
+        return ComputationInfo::FAILURE;
+    }
 
-    // correct for rest of program
-    eigenvectors = eigenvectors.inverse();
-    eigenvectors_inverse = eigenvectors_inverse.inverse();
+    if (!isApproxZero(eigenvectors.adjoint() * matrixHamiltonian * eigenvectors - finalDiagonalMatrix, 1E-10))
+    {
+        std::cout << " Qdagger H Q != E " << std::endl;
+        return ComputationInfo::FAILURE;
+    }
 
     return SUCCESS;
 }
 
-// what I have learned: using SelfAdjointEigenSolver gives off diagonal when doing the check!
-// using ComplexEigenSolver gives the correct diagonal matrix
 
 void Diagonalization::calcAngularMomentum()
 {
 
     Eigen::MatrixXcd matrixL = Eigen::MatrixXcd::Zero(8, 8);
-    Eigen::MatrixXcd g = getMatrix_g();
     std::complex<double> i(0, 1);
 
     double polVec = phDisp.polVectors[2][2]; // phDisp.polVectors[1][2]; //
 
     assert(matrixL.rows() == 8);
     assert(matrixL.cols() == 8);
-    assert(g.rows() == 8);
-    assert(g.cols() == 8);
     assert(eigenvectors.rows() == 8);
     assert(eigenvectors.cols() == 8);
     assert(eigenvectors_inverse.rows() == 8);
@@ -749,50 +735,12 @@ void Diagonalization::calcAngularMomentum()
 
     auto D = i / 2.0 * eigenvectors_inverse * matrixL * eigenvectors;
 
-    // std::cout << phDisp.polVectors[0][0] << phDisp.polVectors[1][0] << phDisp.polVectors[2][0] << std::endl;
-    // std::cout << phDisp.polVectors[0][1] << phDisp.polVectors[1][1] << phDisp.polVectors[2][1] << std::endl;
-    // std::cout << phDisp.polVectors[0][2] << phDisp.polVectors[1][2] << phDisp.polVectors[2][2] << std::endl;
-    // std::cout << D << std::endl;
-    // std::cout << polVec << std::endl;
-
     for (int j = 0; j < 8; j++)
     {
         angularMomentum.push_back(D(j, j));
     }
 
     return;
-    /*
-    Eigen::Vector3d L;
-    std::complex<double> i(0, 1);
-
-    for (int nu = 0; nu < 8; nu++)
-    {
-        Eigen::Vector3cd sum = Eigen::Vector3cd::Zero();
-        Eigen::VectorXcd alpha_nu = eigenvectors_inverse.row(nu);
-        Eigen::VectorXcd alpha_dagger_nu = alpha_nu.conjugate();
-
-        for (int lambda = 0; lambda < 3; lambda++)
-        {
-            for (int lambda_prime = 0; lambda_prime < 3; lambda_prime++)
-            {
-                double E_lam = phDisp.E[lambda];
-                double E_lam_prime = phDisp.E[lambda_prime];
-                Eigen::Vector3d polVec_lam(phDisp.polVectors[0][lambda], phDisp.polVectors[1][lambda], phDisp.polVectors[2][lambda]);
-                Eigen::Vector3d polVec_lam_prime(phDisp.polVectors[0][lambda_prime], phDisp.polVectors[1][lambda_prime], phDisp.polVectors[2][lambda_prime]);
-                Eigen::Vector3d polVecCrossProduct = polVec_lam_prime.cross(polVec_lam);
-                std::complex<double> expFunc = std::exp(i * (E_lam - E_lam_prime) * time);
-                sum += i * sqrt(E_lam_prime / E_lam) * alpha_nu.dot(alpha_dagger_nu) * polVecCrossProduct * expFunc;
-            }
-        }
-        double Lx = sqrt(sum(0).real() * sum(0).real() + sum(0).imag() * sum(0).imag());
-        double Ly = sqrt(sum(1).real() * sum(1).real() + sum(1).imag() * sum(1).imag());
-        double Lz = sqrt(sum(2).real() * sum(2).real() + sum(2).imag() * sum(2).imag());
-
-        // L = Eigen::Vector3d(Lx, Ly, Lz);
-        L = sum.real();
-        angularMomentum.push_back(L);
-    }
-    */
 }
 
 std::vector<std::vector<double>> diagonalizeHamiltonian(const std::vector<Vector3D> &path, const std::vector<PhononDispParam> &phononDispersion, const std::vector<MagnonDispParam> &magnonDispersion, const std::vector<CouplingParameter> &parameters)
