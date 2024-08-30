@@ -81,6 +81,7 @@ plt.plot(x,[ 2* (angular_momentum_data[i][3]).real for i in range(len(angular_mo
 plt.xticks([0,499], labels=[r'$\Gamma$',r'$H$'])
 plt.ylabel(r'angular momentum ($\hbar$)')
 plt.yticks([-1,0,1])
+plt.xlim(0,499)
 plt.tight_layout()
 plt.savefig('scripts/Figures/angular_momentum_GH_colpa.png', dpi=600)
 plt.show()

@@ -105,7 +105,7 @@ axs.set_xticks([i * k_points_per_path for i in range(len(labels))], labels )
 
 axs.set_ylabel(r'$\mathrm{magnon}$ $\mathrm{dispersion}$ $\mathrm{(meV)}$')
 
-plt.savefig('scripts/Figures/mag_disp_bccFe_final.pdf')
+#plt.savefig('scripts/Figures/mag_disp_bccFe_final.pdf')
 plt.show()
 plt.clf()
 

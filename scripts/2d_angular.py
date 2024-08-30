@@ -139,7 +139,7 @@ for j in [2]:
     plt.show()
 """
 
-fig, axs = plt.subplots(2, 2, figsize=(14/2.52,14/2.52), sharex=True, sharey=True)
+fig, axs = plt.subplots(2, 2, figsize=(11/2.52,8/2.52), sharex=True, sharey=True)
 
 for j in [4,5,6,7]:
     Lx_point = [Lx_all_modes[i][j] for i in range(len(L))]
@@ -174,7 +174,7 @@ for i in range(2):
     for j in range(2):
         axs[i][j].set_xlim(-0.1,0.1)
         axs[i][j].set_ylim(-0.1,0.1)
-        axs[i][j].set_xticks([-0.05,0,0.05])
+        axs[i][j].set_xticks([-0.1,0,0.1])
         axs[i][j].set_yticks([-0.1,0,0.1])
 
 cbar = plt.colorbar(plt.cm.ScalarMappable(norm=plt.Normalize(-1,1), cmap='coolwarm'), ax=axs, label='angular momentum', pad=-.45)

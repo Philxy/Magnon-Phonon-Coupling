@@ -188,7 +188,8 @@ from matplotlib import cm
 
 #fig = plt.figure(figsize=(10, 7))
 #ax = fig.add_subplot(111, projection='3d')
-fig, axs = plt.subplots(2, 2, figsize=(22, 7), subplot_kw={'projection': '3d'})
+fig, axs = plt.subplots(2, 2, figsize=(12, 5), subplot_kw={'projection': '3d'})
+#plt.subplots_adjust(wspace=2, hspace=2)
 
 kx_small = []
 ky_small = []
@@ -243,12 +244,12 @@ for i in range(2):
     for j in range(2):
         axs[i][j].set_xlim(-0.1,0.1)
         axs[i][j].set_ylim(-0.1,0.1)
-        axs[i][j].set_xticks([-0.05,0,0.05])
+        axs[i][j].set_xticks([-0.1,0,0.1])
         axs[i][j].set_yticks([-0.1,0,0.1])
 
-cbar = plt.colorbar(plt.cm.ScalarMappable(norm=plt.Normalize(-1,1), cmap='coolwarm'), ax=axs, label='angular momentum', pad=-.45)
-cbar.set_ticklabels([r'$\hbar$','0',r'$-\hbar$'])
-cbar.set_ticks([-1,0,1])
+#cbar = plt.colorbar(plt.cm.ScalarMappable(norm=plt.Normalize(-1,1), cmap='coolwarm'), ax=axs, label='angular momentum', pad=-.45)
+#cbar.set_ticklabels([r'$\hbar$','0',r'$-\hbar$'])
+#cbar.set_ticks([-1,0,1])
 plt.tight_layout()
 plt.savefig("scripts/Figures/ang_eig_fromEV_diag_acc_colpa.png", dpi=700)
 plt.show()
