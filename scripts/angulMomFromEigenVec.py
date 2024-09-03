@@ -53,5 +53,5 @@ plt.ylim(-1.1,1.1)
 
 plt.ylabel("angular momentum ($\hbar$)")
 plt.tight_layout()
-plt.savefig("scripts/Figures/ang_eig_fromEV_GH_colpa.png", dpi=500)
+#plt.savefig("scripts/Figures/ang_eig_fromEV_GH_colpa.png", dpi=500)
 plt.show()
